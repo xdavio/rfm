@@ -93,17 +93,23 @@ float derm(SMat& m, int row, float beta0,
 }
 
 // [[Rcpp::export]]
-float sp(float beta0,
-         Eigen::VectorXd & beta,
-         Eigen::MatrixXd & v,
-         const Eigen::VectorXd & values,
-         const Eigen::VectorXi & rows,
-         const Eigen::VectorXi & cols,
-         const Eigen::VectorXd & y_values,
-         const Eigen::VectorXi & y_ind,
-         int nrow,
-         int ncol)
+Rcpp::List sp(float beta0,
+              Eigen::VectorXd & beta,
+              Eigen::MatrixXd & v,
+              const Eigen::VectorXd & values,
+              const Eigen::VectorXi & rows,
+              const Eigen::VectorXi & cols,
+              const Eigen::VectorXd & y_values,
+              const Eigen::VectorXi & y_ind,
+              int nrow,
+              int ncol)
 {
+    // hardcoding these for now
+    int minibatch = 30;
+    int n_outer = 100000;
+    float eta = -.0001;
+    float eta_minibatch = eta / minibatch;
+
     // make sparse matrix X
     SMat X(nrow, ncol);
     msp(X, values, rows, cols);
@@ -111,50 +117,47 @@ float sp(float beta0,
     // make sparse response Y
     SVec Y(nrow);
     msv(Y, y_values, y_ind);
-
-    int minibatch = 30;
-
     
-    VectorXi ind(minibatch);
-    for (int i=0; i<minibatch; ++i) {
-        ind(i) = rand_ind(nrow);
-    }
-
-    float beta0_cache = 0;
-    VectorXd beta_cache(beta.size());
-    beta_cache.setZero();
-    MatrixXd v_cache(v.rows(), v.cols());
-    v_cache.setZero();
-    VectorXd v_precompute(v.cols());
+    for (int outer_it=0; outer_it<n_outer; ++outer_it) {
+        // set all caches to zero
+        float beta0_cache = 0;
+        VectorXd beta_cache(beta.size());
+        beta_cache.setZero();
+        MatrixXd v_cache(v.rows(), v.cols());
+        v_cache.setZero();
+        VectorXd v_precompute(v.cols());
     
-    float cache;
-    int rand;
-    for (int i=0; i<minibatch; ++i) {
-        rand = rand_ind(nrow);
-        cache = derm(X, rand, beta0, beta, v, Y);
+        float cache;
+        int rand;
+        for (int i=0; i<minibatch; ++i) {
+            rand = rand_ind(nrow);
 
-        v_precompute.setZero();
-        for (SMat::InnerIterator it(X, rand); it; ++it) {
-            v_precompute += v.row(it.index()) * it.value();
-        }
+            cache = derm(X, rand, beta0, beta, v, Y);
+
+            v_precompute.setZero();
+            for (SMat::InnerIterator it(X, rand); it; ++it) {
+                v_precompute += v.row(it.index()) * it.value();
+            }
         
-        beta0_cache += cache;
-        for (SMat::InnerIterator it(X, rand); it; ++it) {
-            beta_cache(it.index()) += cache * it.value();
-            v_cache.row(it.index()) += cache * (it.value() * v_precompute - it.value() * it.value() * v.row(it.index()));
+            beta0_cache += cache;
+            for (SMat::InnerIterator it(X, rand); it; ++it) {
+                beta_cache(it.index()) += cache * it.value();
+                v_cache.row(it.index()) += cache * (it.value() * v_precompute - it.value() * it.value() * v.row(it.index()));
+            }
         }
+    
+        beta0 -= eta_minibatch * beta0_cache;
+        beta -= eta_minibatch * beta_cache;
+        v -= eta_minibatch * v_cache;
     }
-    
-    float eta = .1;
-    beta0 -= eta / minibatch * beta0_cache;
-    beta -= eta / minibatch * beta_cache;
-    v -= eta / minibatch * v_cache;
 
-    std::cout << "beta0_new: " << beta0 << std::endl;
-    std::cout << "beta_new: " << beta << std::endl;
-    std::cout << "v_new: " << v << std::endl;
-    
-    return eta;
+    // std::cout << "beta0_new: " << beta0 << std::endl;
+    // std::cout << "beta_new: " << beta << std::endl;
+    // std::cout << "v_new: " << v << std::endl;
+
+    return Rcpp::List::create(
+                              Rcpp::Named("beta0") = beta0,
+                              Rcpp::Named("beta") = beta,
+                              Rcpp::Named("v") = v
+                        );
 }
-
-
