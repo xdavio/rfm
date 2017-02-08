@@ -6,95 +6,155 @@
 // [[Rcpp::depends(RcppEigen)]]
 
 #include <Eigen/Core>
+#include <Eigen/Sparse>
 #include <random>
 
 using namespace Eigen;
 
-// [[Rcpp::export]]
-Rcpp::List sgd(const Eigen::MatrixXd & X,
-	       const Eigen::VectorXd & y,
-	       int K,
-	       int minibatch_size)
+typedef Triplet<double> T;
+typedef SparseMatrix<double, RowMajor> SMat;
+typedef SparseVector<double> SVec;
+
+void msp(SMat& m,
+         const Eigen::VectorXd & values,
+         const Eigen::VectorXi & rows,
+         const Eigen::VectorXi & cols)
 {
-  int N = X.rows();    // sample size
-  int M = X.cols();    // n_features
-  
-  VectorXd beta(M);  // main effects
-  MatrixXd v(M, K);  // latent space
-  VectorXd intercept(1);  // intercept
+    // make sparse matrix
 
-  VectorXd betaold(M);  // main effects old
-  MatrixXd vold(M, K);  // latent space old
-  VectorXd interceptold(1);   // intercept old
+    // fills `m` from triplets given by
+    // `values`: actual values
+    // `rows`:   row indices
+    // `cols`:   col indices
+    
+    std::vector<T> triplets;
+    triplets.reserve(values.size());
+    for (int i=0; i<values.size(); ++i)
+        {
+            triplets.push_back(T(rows(i), cols(i), values(i)));
+        }
+    m.setFromTriplets(triplets.begin(), triplets.end());
+}
 
-  // permutation matrix
-  PermutationMatrix<Dynamic, Dynamic> perm(N);
-  perm.setIdentity();
+void msv(SVec& v,
+         const Eigen::VectorXd & values,
+         const Eigen::VectorXi & ind)
+{
+    // make sparse vector
 
-  // minibatch data
-  MatrixXd mdata(minibatch_size, M);
-  VectorXd mresponse(minibatch_size);
-  
-  // random guesses for the parameters
-  betaold.setRandom();
-  vold.setRandom();
-  interceptold.setRandom();
+    // fills sparse vector `v` from values `values`
+    // and indices `ind`
+    
+    for (int i=0; i<ind.size(); ++i) {
+        v.coeffRef(ind(i)) = values(i);
+    }
+}
 
-  beta.setZero();
-  v.setZero();
-  intercept.setZero();
+int rand_ind(int& rowmax)
+{
+    //  generates a random integer with max `rowmax`
 
-  int iter = 0;
-  while (((beta-betaold).squaredNorm() > .00001 &&
-	  (v - vold).squaredNorm() > .00001) &&
-	 iter < 100)
-    {
-      iter += 1;
-      std::cout << "iter: " << iter << std::endl;
+    std::random_device rd;
+    std::mt19937 gen(rd());
+    std::uniform_int_distribution<> dis(0, rowmax-1);
 
-      float out = 0;
-      int r;
-      for (int j=0; j<minibatch_size; ++j)
-	{
-            //r = rand_ind(minibatch_size);
-	  //out += y(r) - interceptold - betaold * X.row(r) - 
-	}
-	
-      // std::random_shuffle(perm.indices().data(),
-      // 			  perm.indices().data()+perm.indices().size());
+    return dis(gen);
+}
 
-      // mdata = (perm * X).topRows(minibatch_size);
-      // std::cout << mdata << std::endl;
+float fm(SMat& m, int row, float beta0,
+         const VectorXd& beta,
+         const MatrixXd& v)
+{
+    // compute fm model for row `row`
+    // eval fm likelihood.
 
-      // //mresponse = (perm * y).head(minibatch_size);
-      // std::cout << (perm * y).head(minibatch_size) << std::endl;
+    float out = 0.0;
+    out += beta0;
 
-      
+    for (SMat::InnerIterator it(m, row); it; ++it) {
+        out += beta(it.index()) * it.value();
+
+        for (SMat::InnerIterator subit(m, row); it; ++it) {
+            out += v.row(it.index()).dot(v.row(subit.index())) *\
+                it.value() * subit.value();
+        }
+    }
+    return out;
+}
+
+float derm(SMat& m, int row, float beta0,
+           const VectorXd& beta,
+           const MatrixXd& v,
+           SVec& Y)
+{
+    // computes the derivative of squared loss with respect to the model
+    
+    return 2 * (Y.coeffRef(row) - fm(m, row, beta0, beta, v));
+}
+
+// [[Rcpp::export]]
+float sp(float beta0,
+         Eigen::VectorXd & beta,
+         Eigen::MatrixXd & v,
+         const Eigen::VectorXd & values,
+         const Eigen::VectorXi & rows,
+         const Eigen::VectorXi & cols,
+         const Eigen::VectorXd & y_values,
+         const Eigen::VectorXi & y_ind,
+         int nrow,
+         int ncol)
+{
+    // make sparse matrix X
+    SMat X(nrow, ncol);
+    msp(X, values, rows, cols);
+
+    // make sparse response Y
+    SVec Y(nrow);
+    msv(Y, y_values, y_ind);
+
+    int minibatch = 30;
+
+    
+    VectorXi ind(minibatch);
+    for (int i=0; i<minibatch; ++i) {
+        ind(i) = rand_ind(nrow);
     }
 
-  
+    float beta0_cache = 0;
+    VectorXd beta_cache(beta.size());
+    beta_cache.setZero();
+    MatrixXd v_cache(v.rows(), v.cols());
+    v_cache.setZero();
+    VectorXd v_precompute(v.cols());
+    
+    float cache;
+    int rand;
+    for (int i=0; i<minibatch; ++i) {
+        rand = rand_ind(nrow);
+        cache = derm(X, rand, beta0, beta, v, Y);
 
-  return Rcpp::List::create(Rcpp::Named("")=1,
-  			    Rcpp::Named("inner")=1);
-  
+        v_precompute.setZero();
+        for (SMat::InnerIterator it(X, rand); it; ++it) {
+            v_precompute += v.row(it.index()) * it.value();
+        }
+        
+        beta0_cache += cache;
+        for (SMat::InnerIterator it(X, rand); it; ++it) {
+            beta_cache(it.index()) += cache * it.value();
+            v_cache.row(it.index()) += cache * (it.value() * v_precompute - it.value() * it.value() * v.row(it.index()));
+        }
+    }
+    
+    float eta = .1;
+    beta0 -= eta / minibatch * beta0_cache;
+    beta -= eta / minibatch * beta_cache;
+    v -= eta / minibatch * v_cache;
+
+    std::cout << "beta0_new: " << beta0 << std::endl;
+    std::cout << "beta_new: " << beta << std::endl;
+    std::cout << "v_new: " << v << std::endl;
+    
+    return eta;
 }
 
-// int rand_ind(int & rowmax)
-// {
-//   std::random_device rd;
-//   std::mt19937 gen(rd());
-//   std::uniform_int_distribution<> dis(0, rowmax-1);
 
-//   return dis(gen);
-// }
-
-
-float model(const VectorXd & intercept,
-	    const VectorXd & beta,
-	    const MatrixXd & v,
-	    const MatrixXd & data,
-	    const int & r)
-{
-    //data.row(r)
-    return 1.0;
-}
