@@ -105,8 +105,8 @@ Rcpp::List sp(float beta0,
               int ncol)
 {
     // hardcoding these for now
-    int minibatch = 50;
-    int n_outer = 2000;
+    int minibatch = 30;
+    int n_outer = 100000;
     float eta = .3;
 
     // ADAM parameters
@@ -205,4 +205,27 @@ Rcpp::List sp(float beta0,
                               Rcpp::Named("beta") = beta,
                               Rcpp::Named("v") = v
                         );
+}
+
+
+// [[Rcpp::export]]
+Eigen::VectorXd predictfm(float beta0,
+                          Eigen::VectorXd & beta,
+                          Eigen::MatrixXd & v,
+                          const Eigen::VectorXd & values,
+                          const Eigen::VectorXi & rows,
+                          const Eigen::VectorXi & cols,
+                          int nrow,
+                          int ncol)
+{
+    // make sparse matrix X
+    SMat X(nrow, ncol);
+    msp(X, values, rows, cols);
+
+    VectorXd yhat(nrow);
+    for (int i; i<nrow; ++i) {
+        yhat(i) = fm(X, i, beta0, beta, v);
+    }
+
+    return yhat;
 }

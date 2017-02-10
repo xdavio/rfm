@@ -19,13 +19,13 @@ rows = c(rows,(1:n) - 1)
 cols = c(cols, rep(0, n))
                                         #foo = c(rep(1, n/2), rep(2, n/2))
 foo = rnorm(n)
-values = c(values, foo)
+values = c(values, foo + 1)
 
 beta0 = 5
 beta = rnorm(m) / 10
-beta[1] = -2
+beta[1] = 0
 v = matrix(rnorm(n * 10), n, 10) / 10
-y = rnorm(n) + 3 + -9 * foo
+y = rnorm(n)/1000 + 3 + -3 * (foo+1)
 
 out = sp(beta0, beta, v, values, rows, cols, y, (1:n) - 1, n, m)
 print(out$beta0)
@@ -34,5 +34,5 @@ print(sum(is.nan(out$beta)))
 print(out$beta[1])
 print(sum(is.nan(out$v)))
 
-
+print(sum((y-predictfm(out$beta0, out$beta, out$v, values, rows, cols, n, m))^2))
 
