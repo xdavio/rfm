@@ -200,10 +200,6 @@ Rcpp::List sp(float beta0,
         // v -= eta * v_cache;
     }
 
-    // std::cout << "beta0_new: " << beta0 << std::endl;
-    // std::cout << "beta_new: " << beta << std::endl;
-    // std::cout << "v_new: " << v << std::endl;
-
     return Rcpp::List::create(
                               Rcpp::Named("beta0") = beta0,
                               Rcpp::Named("beta") = beta,
