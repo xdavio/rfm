@@ -107,7 +107,7 @@ Rcpp::List sp(float beta0,
     // hardcoding these for now
     int minibatch = 30;
     int n_outer = 100000;
-    float eta = -.0001;
+    float eta = .0001;
     float eta_minibatch = eta / minibatch;
 
     // make sparse matrix X
@@ -146,9 +146,9 @@ Rcpp::List sp(float beta0,
             }
         }
     
-        beta0 -= eta_minibatch * beta0_cache;
-        beta -= eta_minibatch * beta_cache;
-        v -= eta_minibatch * v_cache;
+        beta0 += eta_minibatch * beta0_cache;
+        beta += eta_minibatch * beta_cache;
+        v += eta_minibatch * v_cache;
     }
 
     // std::cout << "beta0_new: " << beta0 << std::endl;
