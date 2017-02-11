@@ -105,14 +105,14 @@ Rcpp::List sp(float beta0,
               int ncol)
 {
     // hardcoding these for now
-    int minibatch = 30;
+    int minibatch = 256;
     int n_outer = 100000;
-    float eta = .3;
+    float eta = .1;
 
     // ADAM parameters
     float beta1 = .9;
     float beta2 = .999;
-    float eps = .00000001;
+    float eps = .0000001;
     float a_m_beta0 = 0;
     VectorXd a_m_beta(ncol);
     a_m_beta.setZero();
@@ -195,9 +195,9 @@ Rcpp::List sp(float beta0,
         v -= eta * (a_m_v.array() / (a_v_v.array().sqrt() + eps)).matrix();
         
         // update parameters
-        // beta0 -= eta * beta0_cache;
-        // beta -= eta * beta_cache;
-        // v -= eta * v_cache;
+        // beta0 -= eta * beta0_cache / minibatch;
+        // beta -= eta * beta_cache / minibatch;
+        // v -= eta * v_cache / minibatch;
     }
 
     return Rcpp::List::create(
