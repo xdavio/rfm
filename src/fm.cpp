@@ -74,7 +74,7 @@ float fm(SMat& m, int row, float beta0,
     for (SMat::InnerIterator it(m, row); it; ++it) {
         out += beta(it.index()) * it.value();
 
-        for (SMat::InnerIterator subit(m, row); it; ++it) {
+        for (SMat::InnerIterator subit(m, row); subit; ++subit) {
             out += v.row(it.index()).dot(v.row(subit.index())) *\
                 it.value() * subit.value();
         }
@@ -105,24 +105,27 @@ Rcpp::List sp(float beta0,
               int ncol)
 {
     // hardcoding these for now
-    int minibatch = 256;
-    int n_outer = 100000;
-    float eta = .1;
+    int minibatch = 128;
+    int n_outer = 10000;
+    float eta = .0001;
+
+    // penalty parameters
+    float lambda = 1;
 
     // ADAM parameters
-    float beta1 = .9;
-    float beta2 = .999;
-    float eps = .0000001;
-    float a_m_beta0 = 0;
-    VectorXd a_m_beta(ncol);
-    a_m_beta.setZero();
-    MatrixXd a_m_v(v.rows(), v.cols());
-    a_m_v.setZero();
-    float a_v_beta0 = 0;
-    VectorXd a_v_beta(ncol);
-    a_v_beta.setZero();
-    MatrixXd a_v_v(v.rows(), v.cols());
-    a_v_v.setZero();
+    // float beta1 = .9;
+    // float beta2 = .999;
+    // float eps = .0000001;
+    // float a_m_beta0 = 0;
+    // VectorXd a_m_beta(ncol);
+    // a_m_beta.setZero();
+    // MatrixXd a_m_v(v.rows(), v.cols());
+    // a_m_v.setZero();
+    // float a_v_beta0 = 0;
+    // VectorXd a_v_beta(ncol);
+    // a_v_beta.setZero();
+    // MatrixXd a_v_v(v.rows(), v.cols());
+    // a_v_v.setZero();
     
     
     // make sparse matrix X
@@ -148,6 +151,7 @@ Rcpp::List sp(float beta0,
         for (int i=0; i<minibatch; ++i) {
             rand = rand_ind(nrow);
 
+            // derivative of loss w.r.t. model
             cache = derm(X, rand, beta0, beta, v, Y);
 
             v_precompute.setZero();
@@ -158,7 +162,9 @@ Rcpp::List sp(float beta0,
             beta0_cache += cache;
             for (SMat::InnerIterator it(X, rand); it; ++it) {
                 beta_cache(it.index()) += cache * it.value();
-                v_cache.row(it.index()) += cache * (it.value() * v_precompute - it.value() * it.value() * v.row(it.index()));
+                // + 2 * lambda * beta(it.index())
+                v_cache.row(it.index()) += cache * (it.value() * v_precompute - it.value() * it.value() * v.row(it.index())) + 2 * lambda * v.row(it.index());
+                // + 2 * lambda * v.row(it.index());
             }
         }
 
@@ -166,38 +172,36 @@ Rcpp::List sp(float beta0,
         beta_cache /= minibatch;
         v_cache /= minibatch;
 
-        // ADAM update
-        // first moment
-        a_m_beta0 = beta1 * a_m_beta0 + (1-beta1) * beta0_cache;
-        a_m_beta = beta1 * a_m_beta + (1-beta1) * beta_cache;
-        a_m_v = beta1 * a_m_v + (1-beta1) * v_cache;
+        // // ADAM update
+        // // first moment
+        // a_m_beta0 = beta1 * a_m_beta0 + (1-beta1) * beta0_cache;
+        // a_m_beta = beta1 * a_m_beta + (1-beta1) * beta_cache;
+        // a_m_v = beta1 * a_m_v + (1-beta1) * v_cache;
 
-        // first moment bias correction
-        a_m_beta0 /= (1 - pow(beta1, outer_it + 1));
-        a_m_beta /= (1 - pow(beta1, outer_it + 1));
-        a_m_v /= (1 - pow(beta1, outer_it + 1));
+        // // first moment bias correction
+        // a_m_beta0 /= (1 - pow(beta1, outer_it + 1));
+        // a_m_beta /= (1 - pow(beta1, outer_it + 1));
+        // a_m_v /= (1 - pow(beta1, outer_it + 1));
 
-        // second moment
-        a_v_beta0 = beta2 * a_v_beta0 + (1-beta2) * pow(beta0_cache, 2);
-        a_v_beta = beta2 * a_v_beta + (1-beta2) * beta_cache.array().square().matrix();
-        a_v_v = beta2 * a_v_v + (1-beta2) * v_cache.array().square().matrix();
+        // // second moment
+        // a_v_beta0 = beta2 * a_v_beta0 + (1-beta2) * pow(beta0_cache, 2);
+        // a_v_beta = beta2 * a_v_beta + (1-beta2) * beta_cache.array().square().matrix();
+        // a_v_v = beta2 * a_v_v + (1-beta2) * v_cache.array().square().matrix();
 
-        // second moment bias correction
-        a_v_beta0 /= (1 - pow(beta2, outer_it + 1));
-        a_v_beta /= (1 - pow(beta2, outer_it + 1));
-        a_v_v /= (1 - pow(beta2, outer_it + 1));
+        // // second moment bias correction
+        // a_v_beta0 /= (1 - pow(beta2, outer_it + 1));
+        // a_v_beta /= (1 - pow(beta2, outer_it + 1));
+        // a_v_v /= (1 - pow(beta2, outer_it + 1));
 
-        // update parameters
-        beta0 -= eta * a_m_beta0 / (pow(a_v_beta0, .5) + eps);
-        //beta = beta - eta * a_m_beta / (a_v_beta.array().sqrt() + eps);
-        beta -= eta * (a_m_beta.array() / (a_v_beta.array().sqrt() + eps)).matrix();
-        //v = v - eta * a_m_v / (a_v_v.array().sqrt() + eps);
-        v -= eta * (a_m_v.array() / (a_v_v.array().sqrt() + eps)).matrix();
+        // // update parameters
+        // beta0 -= eta * a_m_beta0 / (pow(a_v_beta0, .5) + eps);
+        // beta -= eta * (a_m_beta.array() / (a_v_beta.array().sqrt() + eps)).matrix();
+        // v -= eta * (a_m_v.array() / (a_v_v.array().sqrt() + eps)).matrix();
         
         // update parameters
-        // beta0 -= eta * beta0_cache / minibatch;
-        // beta -= eta * beta_cache / minibatch;
-        // v -= eta * v_cache / minibatch;
+        beta0 -= eta * beta0_cache;
+        beta -= eta * beta_cache;
+        v -= eta * v_cache;
     }
 
     return Rcpp::List::create(
