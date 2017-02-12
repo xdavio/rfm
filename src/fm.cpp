@@ -98,7 +98,14 @@ struct Params {
     MatrixXd * v;  // v.rows() == beta.size()!!
 };
 
+struct OptParams {
+    int minibatch;
+    int n_outer;
+    float eta;
+};
+
 Params fit_fm(Params params,
+              OptParams opt_params,
               const Eigen::VectorXd & values,
               const Eigen::VectorXi & rows,
               const Eigen::VectorXi & cols,
@@ -112,9 +119,9 @@ Params fit_fm(Params params,
     MatrixXd & v = *(params.v);
 
     // hardcoding these for now
-    int minibatch = 128;
-    int n_outer = 1000;
-    float eta = .1;
+    int & minibatch = opt_params.minibatch;
+    int & n_outer = opt_params.n_outer;
+    float & eta = opt_params.eta;
 
     // penalty parameters
     float lambda = 1;
@@ -236,6 +243,7 @@ Params fit_fm(Params params,
 Rcpp::List sp(float & beta0,
               Eigen::VectorXd & beta,
               Eigen::MatrixXd & v,
+              const Rcpp::List & opt_params_l,
               const Eigen::VectorXd & values,
               const Eigen::VectorXi & rows,
               const Eigen::VectorXi & cols,
@@ -244,12 +252,22 @@ Rcpp::List sp(float & beta0,
               int nrow,
               int ncol)
 {
+
+    // process params
     Params params;
     params.beta0 = &beta0;
     params.beta = &beta;
     params.v = &v;
 
+    // process optimizer params
+    OptParams opt_params;
+    opt_params.minibatch = Rcpp::as<int>(opt_params_l["minibatch"]);
+    opt_params.n_outer = Rcpp::as<int>(opt_params_l["n_outer"]);
+    opt_params.eta = Rcpp::as<float>(opt_params_l["eta"]);
+    
+
     params = fit_fm(params,
+                    opt_params,
                     values,
                     rows,
                     cols,
