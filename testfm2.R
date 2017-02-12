@@ -30,7 +30,10 @@ values = as.numeric(X@x)
 ## print(values)
 
 
-opt_params = list(minibatch=128, n_outer=1000, eta=.1)
+opt_params = list(minibatch=128,
+                  n_outer=100,
+                  eta=.1
+                  lambda=1)
 
 out = sp(beta0, beta/100*0, v*.01, opt_params,
          values, rows, cols,

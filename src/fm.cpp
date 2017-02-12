@@ -102,6 +102,7 @@ struct OptParams {
     int minibatch;
     int n_outer;
     float eta;
+    float lambda;
 };
 
 Params fit_fm(Params params,
@@ -118,13 +119,13 @@ Params fit_fm(Params params,
     VectorXd & beta = *(params.beta);
     MatrixXd & v = *(params.v);
 
-    // hardcoding these for now
+    // set universal opt params
     int & minibatch = opt_params.minibatch;
     int & n_outer = opt_params.n_outer;
     float & eta = opt_params.eta;
 
-    // penalty parameters
-    float lambda = 1;
+    // penalty parameter
+    float & lambda = opt_params.lambda;
 
     // ADAM parameters
     /*
@@ -264,6 +265,7 @@ Rcpp::List sp(float & beta0,
     opt_params.minibatch = Rcpp::as<int>(opt_params_l["minibatch"]);
     opt_params.n_outer = Rcpp::as<int>(opt_params_l["n_outer"]);
     opt_params.eta = Rcpp::as<float>(opt_params_l["eta"]);
+    opt_params.lambda = Rcpp::as<float>(opt_params_l["lambda"]);
     
 
     params = fit_fm(params,
