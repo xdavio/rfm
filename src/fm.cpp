@@ -107,26 +107,33 @@ Rcpp::List sp(float beta0,
     // hardcoding these for now
     int minibatch = 128;
     int n_outer = 10000;
-    float eta = .0001;
+    float eta = .1;
 
     // penalty parameters
     float lambda = 1;
 
     // ADAM parameters
-    // float beta1 = .9;
-    // float beta2 = .999;
-    // float eps = .0000001;
-    // float a_m_beta0 = 0;
-    // VectorXd a_m_beta(ncol);
-    // a_m_beta.setZero();
-    // MatrixXd a_m_v(v.rows(), v.cols());
-    // a_m_v.setZero();
-    // float a_v_beta0 = 0;
-    // VectorXd a_v_beta(ncol);
-    // a_v_beta.setZero();
-    // MatrixXd a_v_v(v.rows(), v.cols());
-    // a_v_v.setZero();
-    
+    /*
+    float beta1 = .9;
+    float beta2 = .999;
+    float eps = .0000001;
+    float a_m_beta0 = 0;
+    VectorXd a_m_beta(ncol);
+    a_m_beta.setZero();
+    MatrixXd a_m_v(v.rows(), v.cols());
+    a_m_v.setZero();
+    float a_v_beta0 = 0;
+    VectorXd a_v_beta(ncol);
+    a_v_beta.setZero();
+    MatrixXd a_v_v(v.rows(), v.cols());
+    a_v_v.setZero();
+    */
+
+    // Adagrad parameters
+    float eps = 1.0e-8;
+    float G_beta0 = 0;
+    VectorXd G_beta = VectorXd::Zero(ncol);
+    MatrixXd G_v = MatrixXd::Zero(v.rows(), v.cols());
     
     // make sparse matrix X
     SMat X(nrow, ncol);
@@ -172,31 +179,42 @@ Rcpp::List sp(float beta0,
         beta_cache /= minibatch;
         v_cache /= minibatch;
 
-        // // ADAM update
-        // // first moment
-        // a_m_beta0 = beta1 * a_m_beta0 + (1-beta1) * beta0_cache;
-        // a_m_beta = beta1 * a_m_beta + (1-beta1) * beta_cache;
-        // a_m_v = beta1 * a_m_v + (1-beta1) * v_cache;
+        // ADAM update
+        /*
+        // first moment
+        a_m_beta0 = beta1 * a_m_beta0 + (1-beta1) * beta0_cache;
+        a_m_beta = beta1 * a_m_beta + (1-beta1) * beta_cache;
+        a_m_v = beta1 * a_m_v + (1-beta1) * v_cache;
 
-        // // first moment bias correction
-        // a_m_beta0 /= (1 - pow(beta1, outer_it + 1));
-        // a_m_beta /= (1 - pow(beta1, outer_it + 1));
-        // a_m_v /= (1 - pow(beta1, outer_it + 1));
+        // first moment bias correction
+        a_m_beta0 /= (1 - pow(beta1, outer_it + 1));
+        a_m_beta /= (1 - pow(beta1, outer_it + 1));
+        a_m_v /= (1 - pow(beta1, outer_it + 1));
 
-        // // second moment
-        // a_v_beta0 = beta2 * a_v_beta0 + (1-beta2) * pow(beta0_cache, 2);
-        // a_v_beta = beta2 * a_v_beta + (1-beta2) * beta_cache.array().square().matrix();
-        // a_v_v = beta2 * a_v_v + (1-beta2) * v_cache.array().square().matrix();
+        // second moment
+        a_v_beta0 = beta2 * a_v_beta0 + (1-beta2) * pow(beta0_cache, 2);
+        a_v_beta = beta2 * a_v_beta + (1-beta2) * beta_cache.array().square().matrix();
+        a_v_v = beta2 * a_v_v + (1-beta2) * v_cache.array().square().matrix();
 
-        // // second moment bias correction
-        // a_v_beta0 /= (1 - pow(beta2, outer_it + 1));
-        // a_v_beta /= (1 - pow(beta2, outer_it + 1));
-        // a_v_v /= (1 - pow(beta2, outer_it + 1));
+        // second moment bias correction
+        a_v_beta0 /= (1 - pow(beta2, outer_it + 1));
+        a_v_beta /= (1 - pow(beta2, outer_it + 1));
+        a_v_v /= (1 - pow(beta2, outer_it + 1));
 
-        // // update parameters
-        // beta0 -= eta * a_m_beta0 / (pow(a_v_beta0, .5) + eps);
-        // beta -= eta * (a_m_beta.array() / (a_v_beta.array().sqrt() + eps)).matrix();
-        // v -= eta * (a_m_v.array() / (a_v_v.array().sqrt() + eps)).matrix();
+        // update parameters
+        beta0 -= eta * a_m_beta0 / (pow(a_v_beta0, .5) + eps);
+        beta -= eta * (a_m_beta.array() / (a_v_beta.array().sqrt() + eps)).matrix();
+        v -= eta * (a_m_v.array() / (a_v_v.array().sqrt() + eps)).matrix();
+        */
+
+        // Adagrad update
+        G_beta0 += pow(beta0_cache, 2);
+        G_beta += beta_cache.array().square().matrix();
+        G_v += v_cache.array().square().matrix();
+        
+        beta0_cache /= pow(G_beta0 + eps, .5);
+        beta_cache = (beta_cache.array()/(G_beta.array() + eps).sqrt()).matrix();
+        v_cache = (v_cache.array()/(G_v.array() + eps).sqrt()).matrix();
         
         // update parameters
         beta0 -= eta * beta0_cache;
