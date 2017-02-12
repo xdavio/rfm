@@ -83,19 +83,22 @@ float fm(SMat& m, int row, float beta0,
 }
 
 float derm(SMat& m, int row, float beta0,
-           const VectorXd& beta,
-           const MatrixXd& v,
-           SVec& Y)
+           const VectorXd & beta,
+           const MatrixXd & v,
+           SVec & Y)
 {
     // computes the derivative of squared loss with respect to the model
     
     return -2 * (Y.coeffRef(row) - fm(m, row, beta0, beta, v));
 }
 
-// [[Rcpp::export]]
-Rcpp::List sp(float beta0,
-              Eigen::VectorXd & beta,
-              Eigen::MatrixXd & v,
+struct Params {
+    float * beta0;
+    VectorXd * beta;
+    MatrixXd * v;  // v.rows() == beta.size()!!
+};
+
+Params fit_fm(Params params,
               const Eigen::VectorXd & values,
               const Eigen::VectorXi & rows,
               const Eigen::VectorXi & cols,
@@ -104,9 +107,13 @@ Rcpp::List sp(float beta0,
               int nrow,
               int ncol)
 {
+    float & beta0 = *(params.beta0);
+    VectorXd & beta = *(params.beta);
+    MatrixXd & v = *(params.v);
+
     // hardcoding these for now
     int minibatch = 128;
-    int n_outer = 10000;
+    int n_outer = 1000;
     float eta = .1;
 
     // penalty parameters
@@ -222,13 +229,41 @@ Rcpp::List sp(float beta0,
         v -= eta * v_cache;
     }
 
-    return Rcpp::List::create(
-                              Rcpp::Named("beta0") = beta0,
-                              Rcpp::Named("beta") = beta,
-                              Rcpp::Named("v") = v
-                        );
+    return params;
 }
 
+// [[Rcpp::export]]
+Rcpp::List sp(float & beta0,
+              Eigen::VectorXd & beta,
+              Eigen::MatrixXd & v,
+              const Eigen::VectorXd & values,
+              const Eigen::VectorXi & rows,
+              const Eigen::VectorXi & cols,
+              const Eigen::VectorXd & y_values,
+              const Eigen::VectorXi & y_ind,
+              int nrow,
+              int ncol)
+{
+    Params params;
+    params.beta0 = &beta0;
+    params.beta = &beta;
+    params.v = &v;
+
+    params = fit_fm(params,
+                    values,
+                    rows,
+                    cols,
+                    y_values,
+                    y_ind,
+                    nrow,
+                    ncol);
+    
+    return Rcpp::List::create(
+                              Rcpp::Named("beta0") = *(params.beta0),
+                              Rcpp::Named("beta") = *(params.beta),
+                              Rcpp::Named("v") = *(params.v)
+                              );
+}
 
 // [[Rcpp::export]]
 Eigen::VectorXd predictfm(float beta0,
