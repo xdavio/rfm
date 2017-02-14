@@ -19,9 +19,9 @@ Params fit_fm(Params params,
               int nrow,
               int ncol)
 {
-    float & beta0 = *(params.beta0);
-    VectorXd & beta = *(params.beta);
-    MatrixXd & v = *(params.v);
+    float & beta0 = *params.beta0;
+    VectorXd & beta = *params.beta;
+    MatrixXd & v = *params.v;
 
     // set universal opt params
     int & minibatch = opt_params.minibatch;
@@ -55,10 +55,8 @@ Params fit_fm(Params params,
     MatrixXd G_v = MatrixXd::Zero(v.rows(), v.cols());
     
     // make sparse matrix X
-    // SMat X(nrow, ncol);
-    // msp(X, values, rows, cols);
     SparseFM X(values, rows, cols, nrow, ncol);
-    SMat Xval = X.matrix();
+    SMat Xval = X.matrix(); // ref the SMat
 
     // make sparse response Y
     SVec Y(nrow);
@@ -162,19 +160,13 @@ Rcpp::List sp(float & beta0,
               int ncol)
 {
 
-    // process params
-    Params params;
-    params.beta0 = &beta0;
-    params.beta = &beta;
-    params.v = &v;
+    Params params = {&beta0, &beta, &v};
 
     // process optimizer params
-    OptParams opt_params;
-    opt_params.minibatch = Rcpp::as<int>(opt_params_l["minibatch"]);
-    opt_params.n_outer = Rcpp::as<int>(opt_params_l["n_outer"]);
-    opt_params.eta = Rcpp::as<float>(opt_params_l["eta"]);
-    opt_params.lambda = Rcpp::as<float>(opt_params_l["lambda"]);
-    
+    OptParams opt_params = {Rcpp::as<int>(opt_params_l["minibatch"]),
+                            Rcpp::as<int>(opt_params_l["n_outer"]),
+                            Rcpp::as<float>(opt_params_l["eta"]),
+                            Rcpp::as<float>(opt_params_l["lambda"])};
 
     params = fit_fm(params,
                     opt_params,
@@ -186,11 +178,9 @@ Rcpp::List sp(float & beta0,
                     nrow,
                     ncol);
     
-    return Rcpp::List::create(
-                              Rcpp::Named("beta0") = *(params.beta0),
-                              Rcpp::Named("beta") = *(params.beta),
-                              Rcpp::Named("v") = *(params.v)
-                              );
+    return Rcpp::List::create(Rcpp::Named("beta0") = *params.beta0,
+                              Rcpp::Named("beta") = *params.beta,
+                              Rcpp::Named("v") = *params.v);
 }
 
 // [[Rcpp::export]]

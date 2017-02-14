@@ -31,7 +31,7 @@ values = as.numeric(X@x)
 
 
 opt_params = list(minibatch=128,
-                  n_outer=10000,
+                  n_outer=1000,
                   eta=.1,
                   lambda=1)
 
