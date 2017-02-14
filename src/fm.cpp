@@ -165,9 +165,9 @@ Params fit_fm(Params params,
     
     for (int outer_it=0; outer_it<n_outer; ++outer_it) {
         // set all caches to zero
-        beta0_cache = 0;
-        beta_cache.setZero();
-        v_cache.setZero();
+        beta0_derlik = 0;
+        beta_derlik.setZero();
+        v_derlik.setZero();
 
         // estimate the gradients into the cache variables
         float cache;
@@ -176,32 +176,32 @@ Params fit_fm(Params params,
             rand = rand_ind(nrow);
 
             // derivative of loss w.r.t. model
-            cache = derm(X, rand, beta0, beta, v, Y);
+            derlik = derm(X, rand, beta0, beta, v, Y);
 
             v_precompute.setZero();
             for (SMat::InnerIterator it(X, rand); it; ++it) {
                 v_precompute += v.row(it.index()) * it.value();
             }
         
-            beta0_cache += cache;
+            beta0_derlik += derlik;
             for (SMat::InnerIterator it(X, rand); it; ++it) {
-                beta_cache(it.index()) += cache * it.value();
+                beta_derlik(it.index()) += derlik * it.value();
                 // + 2 * lambda * beta(it.index())
-                v_cache.row(it.index()) += cache * (it.value() * v_precompute - it.value() * it.value() * v.row(it.index())) + 2 * lambda * v.row(it.index());
+                v_derlik.row(it.index()) += derlik * (it.value() * v_precompute - it.value() * it.value() * v.row(it.index())) + 2 * lambda * v.row(it.index());
                 // + 2 * lambda * v.row(it.index());
             }
         }
 
-        beta0_cache /= minibatch;
-        beta_cache /= minibatch;
-        v_cache /= minibatch;
+        beta0_derlik /= minibatch;
+        beta_derlik /= minibatch;
+        v_derlik /= minibatch;
 
         // ADAM update
         /*
         // first moment
-        a_m_beta0 = beta1 * a_m_beta0 + (1-beta1) * beta0_cache;
-        a_m_beta = beta1 * a_m_beta + (1-beta1) * beta_cache;
-        a_m_v = beta1 * a_m_v + (1-beta1) * v_cache;
+        a_m_beta0 = beta1 * a_m_beta0 + (1-beta1) * beta0_derlik;
+        a_m_beta = beta1 * a_m_beta + (1-beta1) * beta_derlik;
+        a_m_v = beta1 * a_m_v + (1-beta1) * v_derlik;
 
         // first moment bias correction
         a_m_beta0 /= (1 - pow(beta1, outer_it + 1));
@@ -209,9 +209,9 @@ Params fit_fm(Params params,
         a_m_v /= (1 - pow(beta1, outer_it + 1));
 
         // second moment
-        a_v_beta0 = beta2 * a_v_beta0 + (1-beta2) * pow(beta0_cache, 2);
-        a_v_beta = beta2 * a_v_beta + (1-beta2) * beta_cache.array().square().matrix();
-        a_v_v = beta2 * a_v_v + (1-beta2) * v_cache.array().square().matrix();
+        a_v_beta0 = beta2 * a_v_beta0 + (1-beta2) * pow(beta0_derlik, 2);
+        a_v_beta = beta2 * a_v_beta + (1-beta2) * beta_derlik.array().square().matrix();
+        a_v_v = beta2 * a_v_v + (1-beta2) * v_derlik.array().square().matrix();
 
         // second moment bias correction
         a_v_beta0 /= (1 - pow(beta2, outer_it + 1));
@@ -225,18 +225,18 @@ Params fit_fm(Params params,
         */
 
         // Adagrad update
-        G_beta0 += pow(beta0_cache, 2);
-        G_beta += beta_cache.array().square().matrix();
-        G_v += v_cache.array().square().matrix();
+        G_beta0 += pow(beta0_derlik, 2);
+        G_beta += beta_derlik.array().square().matrix();
+        G_v += v_derlik.array().square().matrix();
         
-        beta0_cache /= pow(G_beta0 + eps, .5);
-        beta_cache = (beta_cache.array()/(G_beta.array() + eps).sqrt()).matrix();
-        v_cache = (v_cache.array()/(G_v.array() + eps).sqrt()).matrix();
+        beta0_derlik /= pow(G_beta0 + eps, .5);
+        beta_derlik = (beta_derlik.array()/(G_beta.array() + eps).sqrt()).matrix();
+        v_derlik = (v_derlik.array()/(G_v.array() + eps).sqrt()).matrix();
         
         // update parameters
-        beta0 -= eta * beta0_cache;
-        beta -= eta * beta_cache;
-        v -= eta * v_cache;
+        beta0 -= eta * beta0_derlik;
+        beta -= eta * beta_derlik;
+        v -= eta * v_derlik;
     }
 
     return params;
