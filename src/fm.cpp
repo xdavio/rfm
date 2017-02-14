@@ -158,19 +158,19 @@ Params fit_fm(Params params,
     SVec Y(nrow);
     msv(Y, y_values, y_ind);
 
-    float beta0_cache;
-    VectorXd beta_cache(beta.size());
-    MatrixXd v_cache(v.rows(), v.cols());
+    float beta0_derlik;
+    VectorXd beta_derlik(beta.size());
+    MatrixXd v_derlik(v.rows(), v.cols());
     VectorXd v_precompute(v.cols());
     
     for (int outer_it=0; outer_it<n_outer; ++outer_it) {
-        // set all caches to zero
+        // set all derliks to zero
         beta0_derlik = 0;
         beta_derlik.setZero();
         v_derlik.setZero();
 
-        // estimate the gradients into the cache variables
-        float cache;
+        // estimate the gradients into the derlik variables
+        float derlik;
         int rand;
         for (int i=0; i<minibatch; ++i) {
             rand = rand_ind(nrow);
