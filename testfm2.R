@@ -31,8 +31,8 @@ values = as.numeric(X@x)
 
 
 opt_params = list(minibatch=128,
-                  n_outer=100,
-                  eta=.1
+                  n_outer=10000,
+                  eta=.1,
                   lambda=1)
 
 out = sp(beta0, beta/100*0, v*.01, opt_params,

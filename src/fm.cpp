@@ -5,105 +5,9 @@
 
 // [[Rcpp::depends(RcppEigen)]]
 
-#include <Eigen/Core>
-#include <Eigen/Sparse>
-#include <random>
+#include "fm.h"
 
 using namespace Eigen;
-
-typedef Triplet<double> T;
-typedef SparseMatrix<double, RowMajor> SMat;
-typedef SparseVector<double> SVec;
-
-void msp(SMat& m,
-         const Eigen::VectorXd & values,
-         const Eigen::VectorXi & rows,
-         const Eigen::VectorXi & cols)
-{
-    // make sparse matrix
-
-    // fills `m` from triplets given by
-    // `values`: actual values
-    // `rows`:   row indices
-    // `cols`:   col indices
-    
-    std::vector<T> triplets;
-    triplets.reserve(values.size());
-    for (int i=0; i<values.size(); ++i)
-        {
-            triplets.push_back(T(rows(i), cols(i), values(i)));
-        }
-    m.setFromTriplets(triplets.begin(), triplets.end());
-}
-
-void msv(SVec& v,
-         const Eigen::VectorXd & values,
-         const Eigen::VectorXi & ind)
-{
-    // make sparse vector
-
-    // fills sparse vector `v` from values `values`
-    // and indices `ind`
-    
-    for (int i=0; i<ind.size(); ++i) {
-        v.coeffRef(ind(i)) = values(i);
-    }
-}
-
-int rand_ind(int& rowmax)
-{
-    //  generates a random integer with max `rowmax`
-
-    std::random_device rd;
-    std::mt19937 gen(rd());
-    std::uniform_int_distribution<> dis(0, rowmax-1);
-
-    return dis(gen);
-}
-
-float fm(SMat& m, int row, float beta0,
-         const VectorXd& beta,
-         const MatrixXd& v)
-{
-    // compute fm model for row `row`
-    // eval fm likelihood.
-
-    float out = 0.0;
-    out += beta0;
-
-    for (SMat::InnerIterator it(m, row); it; ++it) {
-        out += beta(it.index()) * it.value();
-
-        for (SMat::InnerIterator subit(m, row); subit; ++subit) {
-            out += v.row(it.index()).dot(v.row(subit.index())) *\
-                it.value() * subit.value();
-        }
-    }
-    return out;
-}
-
-float derm(SMat& m, int row, float beta0,
-           const VectorXd & beta,
-           const MatrixXd & v,
-           SVec & Y)
-{
-    // computes the derivative of squared loss with respect to the model
-    
-    return -2 * (Y.coeffRef(row) - fm(m, row, beta0, beta, v));
-}
-
-struct Params {
-    float * beta0;
-    VectorXd * beta;
-    MatrixXd * v;  // v.rows() == beta.size()!!
-};
-
-struct OptParams {
-    int minibatch;
-    int n_outer;
-    float eta;
-    float lambda;
-};
 
 Params fit_fm(Params params,
               OptParams opt_params,
@@ -151,12 +55,14 @@ Params fit_fm(Params params,
     MatrixXd G_v = MatrixXd::Zero(v.rows(), v.cols());
     
     // make sparse matrix X
-    SMat X(nrow, ncol);
-    msp(X, values, rows, cols);
+    // SMat X(nrow, ncol);
+    // msp(X, values, rows, cols);
+    SparseFM X(values, rows, cols, nrow, ncol);
+    SMat Xval = X.matrix();
 
     // make sparse response Y
     SVec Y(nrow);
-    msv(Y, y_values, y_ind);
+    msv<const VectorXd, const VectorXi>(Y, y_values, y_ind);
 
     float beta0_derlik;
     VectorXd beta_derlik(beta.size());
@@ -173,18 +79,18 @@ Params fit_fm(Params params,
         float derlik;
         int rand;
         for (int i=0; i<minibatch; ++i) {
-            rand = rand_ind(nrow);
+            rand = rand_ind<int>(nrow);
 
             // derivative of loss w.r.t. model
-            derlik = derm(X, rand, beta0, beta, v, Y);
+            derlik = X.derm(rand, beta0, beta, v, Y);
 
             v_precompute.setZero();
-            for (SMat::InnerIterator it(X, rand); it; ++it) {
+            for (SMat::InnerIterator it(Xval, rand); it; ++it) {
                 v_precompute += v.row(it.index()) * it.value();
             }
         
             beta0_derlik += derlik;
-            for (SMat::InnerIterator it(X, rand); it; ++it) {
+            for (SMat::InnerIterator it(Xval, rand); it; ++it) {
                 beta_derlik(it.index()) += derlik * it.value();
                 // + 2 * lambda * beta(it.index())
                 v_derlik.row(it.index()) += derlik * (it.value() * v_precompute - it.value() * it.value() * v.row(it.index())) + 2 * lambda * v.row(it.index());
@@ -298,12 +204,11 @@ Eigen::VectorXd predictfm(float beta0,
                           int ncol)
 {
     // make sparse matrix X
-    SMat X(nrow, ncol);
-    msp(X, values, rows, cols);
+    SparseFM X(values, rows, cols, nrow, ncol);
 
     VectorXd yhat(nrow);
-    for (int i; i<nrow; ++i) {
-        yhat(i) = fm(X, i, beta0, beta, v);
+    for (int i=0; i<nrow; ++i) {
+        yhat(i) = X.predict(i, beta0, beta, v);
     }
 
     return yhat;
