@@ -158,14 +158,16 @@ Params fit_fm(Params params,
     SVec Y(nrow);
     msv(Y, y_values, y_ind);
 
+    float beta0_cache;
+    VectorXd beta_cache(beta.size());
+    MatrixXd v_cache(v.rows(), v.cols());
+    VectorXd v_precompute(v.cols());
+    
     for (int outer_it=0; outer_it<n_outer; ++outer_it) {
         // set all caches to zero
-        float beta0_cache = 0;
-        VectorXd beta_cache(beta.size());
+        beta0_cache = 0;
         beta_cache.setZero();
-        MatrixXd v_cache(v.rows(), v.cols());
         v_cache.setZero();
-        VectorXd v_precompute(v.cols());
 
         // estimate the gradients into the cache variables
         float cache;
