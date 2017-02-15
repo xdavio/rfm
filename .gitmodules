@@ -1,0 +1,3 @@
+[submodule "python/externals/eigen"]
+	path = python/externals/eigen
+	url = git@github.com:RLovelett/eigen.git
