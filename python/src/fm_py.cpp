@@ -8,17 +8,17 @@
 
 using namespace Eigen;
 
-void c_fit_fm(float & beta0,
-              Eigen::VectorXd & beta,
-              Eigen::MatrixXd & v,
-              std::map<std::string, float> & opt_params_l,
-              const Eigen::VectorXd & values,
-              const Eigen::VectorXi & rows,
-              const Eigen::VectorXi & cols,
-              const Eigen::VectorXd & y_values,
-              const Eigen::VectorXi & y_ind,
-              int nrow,
-              int ncol)
+std::tuple<float, Eigen::VectorXd, Eigen::MatrixXd> c_fit_fm(float & beta0,
+                                                             Eigen::VectorXd & beta,
+                                                             Eigen::MatrixXd & v,
+                                                             std::map<std::string, float> & opt_params_l,
+                                                             Eigen::VectorXd & values,
+                                                             Eigen::VectorXi & rows,
+                                                             Eigen::VectorXi & cols,
+                                                             Eigen::VectorXd & y_values,
+                                                             Eigen::VectorXi & y_ind,
+                                                             int nrow,
+                                                             int ncol)
 {
 
   Params params = {&beta0, &beta, &v};
@@ -39,17 +39,15 @@ void c_fit_fm(float & beta0,
   		  nrow,
   		  ncol);
 
-  beta0 = *params.beta0;
-  beta = *params.beta;
-  v = *params.v;
+  return std::make_tuple(*params.beta0, *params.beta, *params.v);
 }
 
 VectorXd c_predictfm(float beta0,
 		     Eigen::VectorXd & beta,
 		     Eigen::MatrixXd & v,
-		     const Eigen::VectorXd & values,
-		     const Eigen::VectorXi & rows,
-		     const Eigen::VectorXi & cols,
+		     Eigen::VectorXd & values,
+		     Eigen::VectorXi & rows,
+		     Eigen::VectorXi & cols,
 		     int nrow,
 		     int ncol)
 {

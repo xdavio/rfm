@@ -7,6 +7,7 @@ import os
 __version__ = '0.0.1'
 
 os.environ["CC"] = "/usr/bin/clang"
+# os.environ["CC"] = "gcc"
 # os.environ["PKG_CXXFLAGS"] = "-std=c++11"
 
 class get_pybind_include(object):
@@ -35,7 +36,8 @@ ext_modules = [
             get_pybind_include(),
             get_pybind_include(user=True),
             'external/eigen',
-            'external/pybind11/include'
+            'external/pybind11/include',
+            '/usr/local/include'
         ],
         language='c++'
     ),
@@ -81,7 +83,7 @@ class BuildExt(build_ext):
 
     if sys.platform == 'darwin':
         c_opts['unix'] += ['-stdlib=libc++', '-mmacosx-version-min=10.7']
-        # c_opts['unix'] += ['-mmacosx-version-min=10.7']
+        #c_opts['unix'] += ['-mmacosx-version-min=10.7']
 
     def build_extensions(self):
         ct = self.compiler.compiler_type
