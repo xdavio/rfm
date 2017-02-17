@@ -39,16 +39,37 @@ movies_code2id =  {code:i for i,code in
                   enumerate(unique_movies)}
 
 nrow = df_ratings.shape[0]
+ncol = unique_movies.shape[0] + unique_users.shape[0]
 
 y = df_ratings.rating
 y_ind = np.arange(nrow)
 
-row = np.concatenate((y_ind, y_ind))
+rows = np.concatenate((y_ind, y_ind))
 
 users = df_ratings['user_id'].apply(lambda code: users_code2id[code]).values
 movies = df_ratings['movie_id'].apply(lambda code: movies_code2id[code]).values + \
-         unique_uesrs.shape[0]
+         unique_users.shape[0]
 
-col = np.concatenate((
+cols = np.concatenate((
     users, movies
 ))
+
+values = np.repeat(1, cols.shape[0])
+
+
+K = 5
+beta0 = .1
+beta = np.random.normal(0, 1, ncol) / 1000
+v = np.random.normal(0, 1, (ncol, K)) / 1000
+
+opt = {'minibatch': 128,
+       'n_outer': 100000,
+       'eta': .1,
+       'lambda': .1}
+
+from c_fm import fit_fm, predictfm
+
+fitbeta0, fitbeta, fitv = fit_fm(beta0, beta, v, opt, values, rows, cols, y, y_ind, nrow, ncol)
+pred = predictfm(fitbeta0, fitbeta, fitv, values, rows, cols, nrow, ncol)
+mse = ((y.astype(float).values - pred.astype(float))**2).sum() / nrow
+mse
