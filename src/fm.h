@@ -3,7 +3,6 @@
 #ifndef FM_H
 #define FM_H
 
-#include <Eigen/Core>
 #include <Eigen/Sparse>
 #include <random>
 
