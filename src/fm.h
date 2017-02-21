@@ -53,7 +53,7 @@ class SparseFM
     return m;
   }
 
-  float predict(const int row,
+  inline float predict(const int row,
 		const float beta0,
 		const VectorXd & beta,
 		const MatrixXd & v)
@@ -75,7 +75,7 @@ class SparseFM
     return out;
   }
 
-  float derm(const int row,
+  inline float derm(const int row,
 	     const float beta0,
 	     const VectorXd & beta,
 	     const MatrixXd & v,
@@ -104,7 +104,7 @@ void msv(SVec& v,
 
 // randomly sample an int from 0,...,rowmax - 1
 template <typename T_val>
-T_val rand_ind(T_val & rowmax)
+inline T_val rand_ind(T_val & rowmax)
 {
     //  generates a random integer with max `rowmax`
     std::random_device rd;
