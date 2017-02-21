@@ -24,10 +24,22 @@ std::tuple<float, Eigen::VectorXd, Eigen::MatrixXd> c_fit_fm(float & beta0,
   Params params = {&beta0, &beta, &v};
 
   // process optimizer params
-  OptParams opt_params = {static_cast<int>(opt_params_l["minibatch"]),
-			  static_cast<int>(opt_params_l["n_outer"]),
-			  static_cast<float>(opt_params_l["eta"]),
-			  static_cast<float>(opt_params_l["lambda"])};
+  OptParams opt_params = OptParams();
+  opt_params.optimizer = static_cast<int>(opt_params_l["optimizer"]);
+  opt_params.minibatch = static_cast<int>(opt_params_l["minibatch"]);
+  opt_params.n_outer = static_cast<int>(opt_params_l["n_outer"]);
+  opt_params.eta = static_cast<float>(opt_params_l["eta"]);
+  opt_params.lambda = static_cast<float>(opt_params_l["lambda"]);
+
+  if (opt_params.optimizer == 0) {
+      // adagrad init
+      opt_params.eps = static_cast<float>(opt_params_l["eps"]);
+  } else if (opt_params.optimizer == 1) {
+      // adam init
+      opt_params.eps = static_cast<float>(opt_params_l["eps"]);
+      opt_params.beta1 = static_cast<float>(opt_params_l["beta1"]);
+      opt_params.beta2 = static_cast<float>(opt_params_l["beta2"]);
+  }
 
   params = fit_fm(params,
   		  opt_params,

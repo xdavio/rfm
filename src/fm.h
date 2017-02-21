@@ -20,10 +20,16 @@ struct Params {
 };
 
 struct OptParams {
-    int minibatch;
-    int n_outer;
-    float eta;
-    float lambda;
+    OptParams(): optimizer(0), minibatch(0), n_outer(0), eta(0.0), \
+                 lambda(0.0), eps(0.0), beta1(0.0), beta2(0.0){}
+    int optimizer; // 0: adagrad, 1: adam
+    int minibatch; // minibatch count
+    int n_outer;   // maxiter
+    float eta;     // learning rate
+    float lambda;  // penalty on v
+    float eps;     // epsilon term for adam and adagrad
+    float beta1;   // adagrad-only
+    float beta2;   // adagrad-only
 };
 
 class SparseFM
@@ -48,7 +54,7 @@ class SparseFM
       m.setFromTriplets(triplets.begin(), triplets.end());
     }
 
-  const SMat & matrix() const {
+  inline const SMat & matrix() const {
     // returns a reference to the SMat m
     return m;
   }
