@@ -41,7 +41,7 @@ class FM:
         return self
 
     def predict(self, Xvals, Xrows, Xcols):
-        return predictfm(self.beta0, self.beta, self.v, Xvals,
+        return predictfm(self.coef_[0], self.coef_[1], self.coef_[2], Xvals,
                          Xrows, Xcols, self.nrow, self.ncol)
 
     def loss(self, Xvals, Xrows, Xcols, Yvals):
