@@ -49,9 +49,6 @@ Params fit_fm(Params params,
         G_v = MatrixXd::Zero(v.rows(), v.cols());
     } else if (optimizer == 1) {
         // ADAM parameters
-        // float beta1 = .9;
-        // float beta2 = .999;
-        // float eps = .0000001;
         a_m_beta0 = 0;
         a_m_beta = VectorXd::Zero(ncol);
         a_m_v = MatrixXd::Zero(v.rows(), v.cols());
@@ -150,6 +147,11 @@ Params fit_fm(Params params,
             beta0 -= eta * a_m_beta0 / (pow(a_v_beta0, .5) + eps);
             beta -= eta * (a_m_beta.array() / (a_v_beta.array().sqrt() + eps)).matrix();
             v -= eta * (a_m_v.array() / (a_v_v.array().sqrt() + eps)).matrix();
+        } else if (optimizer == 2) {
+            // SGD update
+            beta0 -= eta * beta0_derlik;
+            beta -= eta * beta_derlik;
+            v -= eta * v_derlik;
         }
     }
 
