@@ -22,8 +22,9 @@ cols = np.random.choice(p, NO_VAL)
 y = np.random.random(n) * 3
 y_ind = np.arange(n)
 
-opt_params = {'minibatch': 128,
-              'n_outer': 100,
+opt_params = {'optimizer': 2,
+              'minibatch': 128,
+              'n_outer': 1000,
               'eta': .1,
               'lambda': 1}
 
