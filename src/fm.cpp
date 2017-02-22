@@ -30,28 +30,35 @@ Params fit_fm(Params params,
 
     // get optimizer
     int & optimizer = opt_params.optimizer;
-    
+
+    // declare all possible variables
+    float G_beta0;
+    VectorXd G_beta;
+    MatrixXd G_v;
+    float a_m_beta0;
+    VectorXd a_m_beta;
+    MatrixXd a_m_v;
+    float a_v_beta0;
+    VectorXd a_v_beta;
+    MatrixXd a_v_v;
     if (optimizer == 0) {
         // Adagrad parameters
         // float eps = 1.0e-8;
-        float G_beta0 = 0;
-        VectorXd G_beta = VectorXd::Zero(ncol);
-        MatrixXd G_v = MatrixXd::Zero(v.rows(), v.cols());
+        G_beta0 = 0;
+        G_beta = VectorXd::Zero(ncol);
+        G_v = MatrixXd::Zero(v.rows(), v.cols());
     } else if (optimizer == 1) {
         // ADAM parameters
         // float beta1 = .9;
         // float beta2 = .999;
         // float eps = .0000001;
-        float a_m_beta0 = 0;
-        VectorXd a_m_beta(ncol);
-        a_m_beta.setZero();
-        MatrixXd a_m_v(v.rows(), v.cols());
-        a_m_v.setZero();
-        float a_v_beta0 = 0;
-        VectorXd a_v_beta(ncol);
-        a_v_beta.setZero();
-        MatrixXd a_v_v(v.rows(), v.cols());
-        a_v_v.setZero();
+        a_m_beta0 = 0;
+        a_m_beta = VectorXd::Zero(ncol);
+        a_m_v = MatrixXd::Zero(v.rows(), v.cols());
+
+        a_v_beta0 = 0;
+        a_v_beta = VectorXd::Zero(ncol);
+        a_v_v = MatrixXd::Zero(v.rows(), v.cols());
     }
     
     // make sparse matrix X

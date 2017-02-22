@@ -1,3 +1,3 @@
-from .estimators import FM
+from .estimators import FM, FMEpoch
 
-__all__ = ['FM']
+__all__ = ['FM', 'FMEpoch']

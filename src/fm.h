@@ -74,7 +74,7 @@ class SparseFM
       out += beta(it.index()) * it.value();
       
       for (SMat::InnerIterator subit(m, row); subit; ++subit) {
-	out += v.row(it.index()).dot(v.row(subit.index())) *	\
+	out += v.row(it.index()).dot(v.row(subit.index())) * \
 	  it.value() * subit.value();
       }
     }
