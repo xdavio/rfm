@@ -2,7 +2,7 @@ import numpy as np
 
 from c_fm import fit_fm, predictfm
 
-OPTIMIZERS = ['adam', 'adagrad']
+OPTIMIZERS = ['adam', 'adagrad', 'sgd']
 
 
 class FM:
@@ -14,6 +14,8 @@ class FM:
             opt_params['optimizer'] = 1
         elif opt_params['optimizer'] == 'adagrad':
             opt_params['optimizer'] = 0
+        elif opt_params['optimizer'] == 'sgd':
+            opt_params['optimizer'] = 2
 
         self.nrow = nrow
         self.ncol = ncol
