@@ -35,12 +35,16 @@ class FM:
         self._set_fitted_coef()
         return self
 
-    def predict(self, Xvals, Xrows, Xcols, nrow, ncol):
+    def predict(self, Xvals, Xrows, Xcols, nrow):
+        """
+        `ncol` agree with the fit call
+        `nrow` varies with the prediction data
+        """
         return predictfm(self.f_beta0, self.f_beta, self.f_v, Xvals,
-                         Xrows, Xcols, nrow, ncol)
+                         Xrows, Xcols, nrow, self.ncol)
 
-    def loss(self, Xvals, Xrows, Xcols, Yvals, nrow, ncol):
-        return sum((self.predict(Xvals, Xrows, Xcols, nrow, ncol) - Yvals)**2) / nrow
+    def loss(self, Xvals, Xrows, Xcols, Yvals, nrow):
+        return sum((self.predict(Xvals, Xrows, Xcols, nrow) - Yvals)**2) / nrow
 
     def _set_fitted_coef(self):
         self.f_beta0, self.f_beta, self.f_v = self.coef_

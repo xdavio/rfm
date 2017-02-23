@@ -93,7 +93,8 @@ Params fit_fm(Params params,
         
             beta0_derlik += derlik;
             for (SMat::InnerIterator it(Xval, rand); it; ++it) {
-                beta_derlik(it.index()) += derlik * it.value();
+                beta_derlik(it.index()) += derlik * it.value() + \
+                    + 2 * lambda * beta(it.index());
                 // + 2 * lambda * beta(it.index())
                 v_derlik.row(it.index()) += derlik * \
                     (it.value() * v_precompute - \
