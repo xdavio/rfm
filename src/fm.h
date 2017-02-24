@@ -118,6 +118,7 @@ Params fit_fm(Params params,
               const Eigen::VectorXd & y_values,
               const Eigen::VectorXi & y_ind,
               int nrow,
-              int ncol);
+              int ncol,
+              VectorXd w);
 
 #endif // FM_H
