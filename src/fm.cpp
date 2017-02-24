@@ -8,8 +8,7 @@ Params fit_fm(Params params,
               const Eigen::VectorXd & values,
               const Eigen::VectorXi & rows,
               const Eigen::VectorXi & cols,
-              const Eigen::VectorXd & y_values,
-              const Eigen::VectorXi & y_ind,
+              Eigen::VectorXd & Y,
               int nrow,
               int ncol,
               Eigen::VectorXd & w)
@@ -62,10 +61,6 @@ Params fit_fm(Params params,
     // make sparse matrix X
     SparseFM X(values, rows, cols, nrow, ncol);
     SMat Xval = X.matrix(); // ref the SMat
-
-    // make sparse response Y
-    SVec Y(nrow);
-    msv<const VectorXd, const VectorXi>(Y, y_values, y_ind);
 
     float beta0_derlik;
     VectorXd beta_derlik(beta.size());

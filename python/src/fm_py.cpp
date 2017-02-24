@@ -15,11 +15,10 @@ std::tuple<float, Eigen::VectorXd, Eigen::MatrixXd> c_fit_fm(float & beta0,
                                                              Eigen::VectorXd & values,
                                                              Eigen::VectorXi & rows,
                                                              Eigen::VectorXi & cols,
-                                                             Eigen::VectorXd & y_values,
-                                                             Eigen::VectorXi & y_ind,
+                                                             Eigen::VectorXd & Y,
                                                              int nrow,
                                                              int ncol,
-                                                             Eigen::VectorXd w)
+                                                             Eigen::VectorXd & w)
 {
 
   Params params = {&beta0, &beta, &v};
@@ -47,8 +46,7 @@ std::tuple<float, Eigen::VectorXd, Eigen::MatrixXd> c_fit_fm(float & beta0,
   		  values,
   		  rows,
   		  cols,
-  		  y_values,
-  		  y_ind,
+  		  Y,
   		  nrow,
   		  ncol,
                   w);

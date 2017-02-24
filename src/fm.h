@@ -85,11 +85,11 @@ class SparseFM
                     float beta0,
                     VectorXd & beta,
                     MatrixXd & v,
-                    SVec & Y,
+                    VectorXd & Y,
                     VectorXd & w)
     {
       // computes the derivative of squared loss with respect to the model
-      return -2 * w(row) * (Y.coeffRef(row) - predict(row, beta0, beta, v));
+      return -2 * w(row) * (Y(row) - predict(row, beta0, beta, v));
     }
 };
 
@@ -115,10 +115,9 @@ Params fit_fm(Params params,
               const Eigen::VectorXd & values,
               const Eigen::VectorXi & rows,
               const Eigen::VectorXi & cols,
-              const Eigen::VectorXd & y_values,
-              const Eigen::VectorXi & y_ind,
+              Eigen::VectorXd & Y,
               int nrow,
               int ncol,
-              VectorXd w);
+              VectorXd & w);
 
 #endif // FM_H
