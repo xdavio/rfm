@@ -70,6 +70,11 @@ Params fit_fm(Params params,
     VectorXd beta_derlik(beta.size());
     MatrixXd v_derlik(v.rows(), v.cols());
     VectorXd v_precompute(v.cols());
+
+    // set up RNG
+    std::random_device rd;
+    std::mt19937 gen(rd());
+    std::uniform_int_distribution<> dis(0, nrow-1);
     
     for (int outer_it=0; outer_it<n_outer; ++outer_it) {
         // set all derliks to zero
@@ -81,7 +86,7 @@ Params fit_fm(Params params,
         float derlik;
         int rand;
         for (int i=0; i<minibatch; ++i) {
-            rand = rand_ind<int>(nrow);
+            rand = dis(gen);  // get random ind
 
             // derivative of loss w.r.t. model
             derlik = X.derm(rand, beta0, beta, v, Y);

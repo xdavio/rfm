@@ -108,18 +108,6 @@ void msv(SVec& v,
     }
 }
 
-// randomly sample an int from 0,...,rowmax - 1
-template <typename T_val>
-inline T_val rand_ind(T_val & rowmax)
-{
-    //  generates a random integer with max `rowmax`
-    std::random_device rd;
-    std::mt19937 gen(rd());
-    std::uniform_int_distribution<> dis(0, rowmax-1);
-
-    return dis(gen);
-}
-
 // fit the factorization machine
 Params fit_fm(Params params,
               OptParams opt_params,
