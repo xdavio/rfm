@@ -81,15 +81,16 @@ class SparseFM
     return out;
   }
 
-  inline float derm(const int row,
-	     const float beta0,
-	     const VectorXd & beta,
-	     const MatrixXd & v,
-	     SVec & Y)
-  {
-    // computes the derivative of squared loss with respect to the model
-    return -2 * (Y.coeffRef(row) - predict(row, beta0, beta, v));
-  }
+  inline float derm(int row,
+                    float beta0,
+                    VectorXd & beta,
+                    MatrixXd & v,
+                    SVec & Y,
+                    VectorXd & w)
+    {
+      // computes the derivative of squared loss with respect to the model
+      return -2 * w(row) * (Y.coeffRef(row) - predict(row, beta0, beta, v));
+    }
 };
 
 // make sparse vector

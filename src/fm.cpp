@@ -11,7 +11,8 @@ Params fit_fm(Params params,
               const Eigen::VectorXd & y_values,
               const Eigen::VectorXi & y_ind,
               int nrow,
-              int ncol)
+              int ncol,
+              Eigen::VectorXd & w)
 {
     float & beta0 = *params.beta0;
     VectorXd & beta = *params.beta;
@@ -89,7 +90,7 @@ Params fit_fm(Params params,
             rand = dis(gen);  // get random ind
 
             // derivative of loss w.r.t. model
-            derlik = X.derm(rand, beta0, beta, v, Y);
+            derlik = X.derm(rand, beta0, beta, v, Y, w);
 
             v_precompute.setZero();
             for (SMat::InnerIterator it(Xval, rand); it; ++it) {

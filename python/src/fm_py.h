@@ -20,7 +20,8 @@ std::tuple<float, Eigen::VectorXd, Eigen::MatrixXd> c_fit_fm(float & beta0,
 							     Eigen::VectorXd & y_values,
 							     Eigen::VectorXi & y_ind,
 							     int nrow,
-							     int ncol);
+							     int ncol,
+							     Eigen::VectorXd w);
 
 VectorXd c_predictfm(float beta0,
 		     Eigen::VectorXd & beta,

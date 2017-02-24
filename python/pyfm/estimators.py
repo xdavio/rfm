@@ -29,9 +29,11 @@ class FM:
         self.beta = np.random.normal(0, 1, self.ncol) / DIV
         self.v = np.random.normal(0, 1, (self.ncol, self.K)) / DIV
 
-    def fit(self, Xvals, Xrows, Xcols, Yvals, Yind):
+    def fit(self, Xvals, Xrows, Xcols, Yvals, Yind, weights=None):
+        if weights is None:
+            weights = np.repeat(1.0, self.nrow)
         self.coef_ = fit_fm(self.beta0, self.beta, self.v, self.opt_params, Xvals,
-                            Xrows, Xcols, Yvals, Yind, self.nrow, self.ncol)
+                            Xrows, Xcols, Yvals, Yind, self.nrow, self.ncol, weights)
         self._set_fitted_coef()
         return self
 
