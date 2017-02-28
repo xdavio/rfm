@@ -51,36 +51,49 @@ class SparseEmbedding:
             #     # if there are just 2 values, only embed it in a single column
             #     unique_values = np.array(unique_values[-1]).reshape(-1)
             #     no_values = 1
-                
-            mapping[var] = {}
-            mapping[var]['codes'] = unique_values
-            mapping[var]['no_values'] = no_values
-            mapping[var]['ids'] = np.arange(last_max, last_max + no_values)
 
-            #id2code = {(i+last_max): code for i, code in enumerate(unique_values)}
-            id2code = {i:code for i, code in zip(mapping[var]['ids'],
-                                                 mapping[var]['codes'])}
-            mapping[var]['id2code'] = id2code
-            #code2id = {code: (i+last_max) for i, code in enumerate(unique_values)}
-            code2id = {code:i for i, code in zip(mapping[var]['ids'],
-                                                 mapping[var]['codes'])}
-            mapping[var]['code2id'] = code2id
+            mapping[var] = self._embed_vec(unique_values, no_values,
+                                           X[:, i], last_max)
+            
+            # shift IDs by no_values in previous feature
+            last_max += no_values
 
-            mapping[var]['row'] = np.arange(self.nrow)
-            mapping[var]['col'] = np.array([code2id[code] for code in X[:, i]])
-            mapping[var]['value'] = np.repeat(1, self.nrow)
-
-            last_max += no_values  # shift IDs by no_values in previous feature
-
-        self.values, self.rows, self.cols = _mapping_to_triplet(mapping)
         self.mapping = mapping
+        self.last_max = last_max
 
         return self
 
+    def add_feature(self, var, datavec):
+        unique_values = np.unique(datavec)
+        no_values = unique_values.shape[0]
+        self.mapping[var] = self._embed_vec(unique_values, no_values,
+                                            datavec, self.last_max)
+        self.last_max += no_values
+
+    def _embed_vec(self, unique_values, no_values, datavec, last_max):
+        m = {}
+        m['codes'] = unique_values
+        m['no_values'] = no_values
+        m['ids'] = np.arange(last_max, last_max + no_values)
+
+        id2code = {i:code for i, code in zip(m['ids'],
+                                             m['codes'])}
+        m['id2code'] = id2code
+        code2id = {code:i for i, code in zip(m['ids'],
+                                             m['codes'])}
+        m['code2id'] = code2id
+
+        m['row'] = np.arange(self.nrow)
+        m['col'] = np.array([code2id[code] for code in datavec])
+        m['value'] = np.repeat(1, self.nrow)
+
+        return m
+    
     def get_triplets(self):
         """
         Returns the triplets
         """
+        self.values, self.rows, self.cols = _mapping_to_triplet(self.mapping)
         return self.values, self.rows, self.cols
 
     def _var_code2id(self, var, code):
@@ -103,6 +116,9 @@ class SparseEmbedding:
         return [k for k in self.mapping]
 
     def var_agg(self, var):
+        """
+        returns {code: np.array of rows}
+        """
         m = self.mapping[var]
         agg = {}
 
@@ -162,3 +178,4 @@ class SparseEmbedding:
             m['name_2'] = m['code_2'].apply(code2_translate)
 
         return m
+
