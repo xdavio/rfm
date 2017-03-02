@@ -6,7 +6,7 @@ OPTIMIZERS = ['adam', 'adagrad', 'sgd']
 
 
 class FM:
-    def __init__(self, nrow, ncol, K, opt_params):
+    def __init__(self, K, opt_params):
         if opt_params['optimizer'] not in OPTIMIZERS:
             raise ValueError('Supplied optimizer is not one of ' +
                              ', '.join(OPTIMIZERS))
@@ -17,11 +17,10 @@ class FM:
         elif opt_params['optimizer'] == 'sgd':
             opt_params['optimizer'] = 2
 
-        self.nrow = nrow
-        self.ncol = ncol
+        self.nrow = None
+        self.ncol = None
         self.K = K
         self.opt_params = opt_params
-        self._init_params()
 
     def _init_params(self):
         DIV = 1000
@@ -30,45 +29,25 @@ class FM:
         self.v = np.random.normal(0, 1, (self.ncol, self.K)) / DIV
 
     def fit(self, Xvals, Xrows, Xcols, Yvals, weights=None):
+        self.nrow = Xrows.max() + 1
+        self.ncol = Xcols.max() + 1
+        self._init_params()
+
         if weights is None:
             weights = np.repeat(1.0, self.nrow)
+
         self.coef_ = fit_fm(self.beta0, self.beta, self.v, self.opt_params, Xvals,
                             Xrows, Xcols, Yvals, self.nrow, self.ncol, weights)
         self._set_fitted_coef()
         return self
 
-    def predict(self, Xvals, Xrows, Xcols, nrow):
-        """
-        `ncol` agree with the fit call
-        `nrow` varies with the prediction data
-        """
+    def predict(self, Xvals, Xrows, Xcols):
+        nrow = Xrows.max() + 1 
         return predictfm(self.f_beta0, self.f_beta, self.f_v, Xvals,
                          Xrows, Xcols, nrow, self.ncol)
 
-    def loss(self, Xvals, Xrows, Xcols, Yvals, nrow):
-        return sum((self.predict(Xvals, Xrows, Xcols, nrow) - Yvals)**2) / nrow
+    def loss(self, Xvals, Xrows, Xcols, Yvals):
+        return sum((self.predict(Xvals, Xrows, Xcols) - Yvals)**2) / (Xrows.max() + 1)
 
     def _set_fitted_coef(self):
         self.f_beta0, self.f_beta, self.f_v = self.coef_
-
-
-class FMEpoch(FM):
-    def __init__(self, nrow, ncol, K, opt_params):
-        self.n_epochs = opt_params.get('n_epochs', 100)
-        self.epoch_loss = np.zeros(self.n_epochs)
-
-        super().__init__(nrow, ncol, K, opt_params)
-
-    def _fit(self, Xvals, Xrows, Xcols, Yvals):
-        s = super().fit(Xvals, Xrows, Xcols, Yvals)
-        self.beta0, self.beta, self.v = s.coef_
-
-    def fit(self, Xvals, Xrows, Xcols, Yvals):
-        """
-        BUG: requires that the sparse representation be rebuilt for each epoch
-        """
-        for i in range(self.n_epochs):
-            self._fit(Xvals, Xrows, Xcols, Yvals)
-            self.epoch_loss[i] = self.loss(Xvals, Xrows, Xcols, Yvals,
-                                           self.nrow, self.ncol)
-        return self

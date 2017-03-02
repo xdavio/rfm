@@ -1,4 +1,4 @@
-from .estimators import FM, FMEpoch
+from .estimators import FM
 from .mapping import SparseEmbedding
 
-__all__ = ['FM', 'FMEpoch', 'SparseEmbedding']
+__all__ = ['FM', 'SparseEmbedding']

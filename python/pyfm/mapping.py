@@ -13,8 +13,10 @@ def _mapping_to_triplet(mapping):
     return values, rows, cols
 
 class SparseEmbedding:
-    def __init__(self):
-        pass
+    def __init__(self, nrow=None):
+        self.last_max = 0
+        self.nrow = nrow
+        self.mapping = {}
 
     def fit_pd(self, df):
         """
@@ -35,9 +37,6 @@ class SparseEmbedding:
         if len(columns) != self.ncol:
             raise Exception("ncol not equal to number of column names")
 
-        # mapping dict ( var : dict ( id2code, code2id, max_id, vals, rows, cols )
-        mapping = {}
-        last_max = 0
         for i, var in enumerate(columns):
             # unique values
             unique_values = np.unique(X[:, i])
@@ -52,14 +51,11 @@ class SparseEmbedding:
             #     unique_values = np.array(unique_values[-1]).reshape(-1)
             #     no_values = 1
 
-            mapping[var] = self._embed_vec(unique_values, no_values,
-                                           X[:, i], last_max)
+            self.mapping[var] = self._embed_vec(unique_values, no_values,
+                                                X[:, i], self.last_max)
             
             # shift IDs by no_values in previous feature
-            last_max += no_values
-
-        self.mapping = mapping
-        self.last_max = last_max
+            self.last_max += no_values
 
         return self
 
@@ -69,6 +65,25 @@ class SparseEmbedding:
         self.mapping[var] = self._embed_vec(unique_values, no_values,
                                             datavec, self.last_max)
         self.last_max += no_values
+
+    def add_cont_feature(self, var, datavec):
+        datavec = (datavec - datavec.mean())/datavec.std()
+        
+        m = {}
+        m['row'] = np.arange(self.nrow)
+        m['value'] = np.array(datavec)
+        m['col'] = np.repeat(self.last_max, self.nrow)
+
+        m['codes'] = np.array(['coef'])
+        m['no_values'] = 1
+        m['ids'] = np.array([self.last_max])
+
+        m['code2id'] = {'coef':self.last_max}
+        m['id2code'] = {self.last_max:'coef'}
+
+        self.last_max += 1
+
+        self.mapping[var] = m
 
     def _embed_vec(self, unique_values, no_values, datavec, last_max):
         m = {}
