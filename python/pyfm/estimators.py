@@ -1,4 +1,5 @@
 import numpy as np
+from sklearn.model_selection import KFold
 
 from c_fm import fit_fm, predictfm
 
@@ -64,3 +65,29 @@ class FM:
             self.f_beta0 = self.y_mean + self.y_std * self.f_beta0
             self.f_beta *= self.y_std
             self.f_v *= np.sqrt(self.y_std)
+
+
+class FMCV:
+    def __init__(self, K, opt_params, standardize=False,
+                 n_splits=5):
+        self.n_splits = n_splits
+        self.cv = KFold(n_splits)
+
+        self.fm = FM(K, opt_params, standardize)
+        
+    def fit(self, Xvals, Xrows, Xcols, Yvals, weights=None):
+        if weights is None:
+            weights = np.repeat(1.0, self.fm.nrow)
+
+        preds = []
+        tests = []
+        for train, test in self.cv.split(Xvals.reshape(-1, 1)):
+            self.fm.fit(Xvals[train], Xrows[train], Xcols[train],
+                        Yvals[train], weights=weights[train])
+            preds.append(self.fm.predict(Xvals[test], Xrows[test], Xcols[test]))
+            tests.append(test)
+        self.preds = np.concatenate(tuple(preds))
+        self.tests = np.concatenate(tuple(tests))
+
+        self.resids = self.preds - Yvals[self.tests]
+        self.cv_loss = np.mean(self.resids ** 2)
