@@ -6,7 +6,7 @@ OPTIMIZERS = ['adam', 'adagrad', 'sgd']
 
 
 class FM:
-    def __init__(self, K, opt_params):
+    def __init__(self, K, opt_params, standardize=False):
         if opt_params['optimizer'] not in OPTIMIZERS:
             raise ValueError('Supplied optimizer is not one of ' +
                              ', '.join(OPTIMIZERS))
@@ -21,6 +21,9 @@ class FM:
         self.ncol = None
         self.K = K
         self.opt_params = opt_params
+        self.standardize = standardize
+        self.y_mean = None
+        self.y_std = None
 
     def _init_params(self):
         DIV = 1000
@@ -35,6 +38,11 @@ class FM:
 
         if weights is None:
             weights = np.repeat(1.0, self.nrow)
+
+        if self.standardize:
+            self.y_mean = Yvals.mean()
+            self.y_std = Yvals.std()
+            Yvals = (Yvals - self.y_mean) / self.y_std
 
         self.coef_ = fit_fm(self.beta0, self.beta, self.v, self.opt_params, Xvals,
                             Xrows, Xcols, Yvals, self.nrow, self.ncol, weights)
@@ -51,3 +59,8 @@ class FM:
 
     def _set_fitted_coef(self):
         self.f_beta0, self.f_beta, self.f_v = self.coef_
+
+        if self.standardize:
+            self.f_beta0 = self.y_mean + self.y_std * self.f_beta0
+            self.f_beta *= self.y_std
+            self.f_v *= np.sqrt(self.y_std)
