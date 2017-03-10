@@ -1,16 +1,20 @@
 import numpy as np
 import pandas as pd
+from sklearn.model_selection import KFold
+
 
 """
 this file attempts to build out logic for keeping track of 
 features embedded in a sparse space
 """
 
+
 def _mapping_to_triplet(mapping):
     values = np.concatenate(tuple(mapping[var]['value'] for var in mapping))
     rows = np.concatenate(tuple(mapping[var]['row'] for var in mapping))
     cols = np.concatenate(tuple(mapping[var]['col'] for var in mapping))
     return values, rows, cols
+
 
 class SparseEmbedding:
     def __init__(self, nrow=None):
@@ -194,3 +198,30 @@ class SparseEmbedding:
 
         return m
 
+
+class SparseEmbeddingCV(SparseEmbedding):
+    def __init__(self, n_splits, *args, **kwargs):
+        self.cv = KFold(n_splits)
+        super().__init__(*args, **kwargs)
+
+    def get_triplets_cv(self):
+        for train, test in self.cv.split(np.arange(self.nrow)):
+            m_train = {}
+            m_test = {}
+            for k in self.mapping:
+                m_train[k] = {}
+                m_test[k] = {}
+                
+                # get the train coords
+                m_train[k]['row'] = np.arange(train.shape[0])
+                m_train[k]['col'] = self.mapping[k]['col'][train]
+                m_train[k]['value'] = self.mapping[k]['value'][train]
+
+                # get the test coords
+                m_test[k]['row'] = np.arange(test.shape[0])
+                m_test[k]['col'] = self.mapping[k]['col'][test]
+                m_test[k]['value'] = self.mapping[k]['value'][test]
+
+            coo_train = _mapping_to_triplet(m_train)
+            coo_test = _mapping_to_triplet(m_test)
+            yield tuple(coo_train), tuple(coo_test), train, test

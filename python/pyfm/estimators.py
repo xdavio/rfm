@@ -81,7 +81,8 @@ class FMCV:
 
         preds = []
         tests = []
-        for train, test in self.cv.split(Xvals.reshape(-1, 1)):
+        for train, test in self.cv.split(Xvals):
+            # this is wrong, have to handle rows w.r.t. Xvals
             self.fm.fit(Xvals[train], Xrows[train], Xcols[train],
                         Yvals[train], weights=weights[train])
             preds.append(self.fm.predict(Xvals[test], Xrows[test], Xcols[test]))
