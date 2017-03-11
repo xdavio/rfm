@@ -70,6 +70,7 @@ Params fit_fm(Params params,
     // set up RNG
     std::random_device rd;
     std::mt19937 gen(rd());
+    gen.seed(43824);
     std::uniform_int_distribution<> dis(0, nrow-1);
     
     for (int outer_it=0; outer_it<n_outer; ++outer_it) {
