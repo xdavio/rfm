@@ -74,8 +74,11 @@ class SparseFM
       out += beta(it.index()) * it.value();
       
       for (SMat::InnerIterator subit(m, row); subit; ++subit) {
-	out += v.row(it.index()).dot(v.row(subit.index())) * \
-	  it.value() * subit.value();
+        // this condition is needed for the i < j part of the FM's interaction terms
+        if (it.index() < subit.index()) {
+          out += v.row(it.index()).dot(v.row(subit.index())) * \
+              it.value() * subit.value();
+        }
       }
     }
     return out;
