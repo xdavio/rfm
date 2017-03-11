@@ -6,7 +6,7 @@ from pyfm import FM
 
 
 @pytest.fixture()
-def setup(nrow=5000, ncol=10, seed=23098472):
+def setup(nrow=1000, ncol=10, seed=23098472):
     np.random.seed(seed)
     
     NUM_VAL = 2 * nrow
@@ -33,7 +33,7 @@ def params1():
         "optimizer": "sgd",
         "minibatch": 128,
         "n_outer": 10000,
-        "eta" : 0.1,
+        "eta" : 0.001,
         "lambda" : 0,
         "eps": 1e-8
     }
@@ -44,8 +44,11 @@ def params1():
 def params_adam(params1):
     opt_params = params1
     opt_params = opt_params.copy()
+    opt_params['minibatch'] = 128
+    opt_params['n_outer'] = 10000
     opt_params['optimizer'] = 'adam'
     opt_params['eta'] = .001
+    opt_params['lambda'] = .001
     return opt_params
 
 
@@ -54,6 +57,7 @@ def params_adagrad(params1):
     opt_params = params1
     opt_params = opt_params.copy()
     opt_params['optimizer'] = 'adagrad'
+    opt_params['eta'] = .05
     return opt_params
 
 
@@ -62,7 +66,7 @@ def test_sgd_main_effects(setup, params1, seed=238423):
 
     np.random.seed(seed)
     
-    fm = FM(K, params1)
+    fm = FM(K, params1, True)
     fm.fit(values, rows, cols, y)
     print(fm.f_beta0)
     print(fm.f_beta)
@@ -84,7 +88,7 @@ def test_adam_main_effects(setup, params_adam, seed=238423):
     para = params_adam    
     values, rows, cols, y, y_ind, K = setup
     
-    fm = FM(K, para)
+    fm = FM(K, para, True)
     fm.fit(values, rows, cols, y)
     print(fm.f_beta0)
     print(fm.f_beta)
@@ -106,7 +110,7 @@ def test_adagrad_main_effects(setup, params_adagrad, seed=238423):
     para = params_adagrad    
     values, rows, cols, y, y_ind, K = setup
     
-    fm = FM(K, para)
+    fm = FM(K, para, True)
     fm.fit(values, rows, cols, y)
     print(fm.f_beta0)
     print(fm.f_beta)

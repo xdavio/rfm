@@ -30,9 +30,9 @@ def params1():
     opt_params_sgd = {
         "optimizer": "sgd",
         "minibatch": 100,
-        "n_outer": 30000,
+        "n_outer": 20000,
         "eta" : 0.001,
-        "lambda" : 0,
+        "lambda" : 0.0001,
         "eps": 1e-8
     }
     K = 10
@@ -44,6 +44,7 @@ def params_adam(params1):
     K, opt_params = params1
     opt_params = opt_params.copy()
     opt_params['optimizer'] = 'adam'
+    opt_params['eta'] = .0001
     return K, opt_params.copy()
 
 
@@ -52,6 +53,7 @@ def params_adagrad(params1):
     K, opt_params = params1
     opt_params = opt_params.copy()
     opt_params['optimizer'] = 'adagrad'
+    opt_params['eta'] = .1
     return K, opt_params.copy()
 
 
@@ -95,4 +97,26 @@ def test_adam_int(data, params_adam):
     np.testing.assert_almost_equal(fm.f_beta[0], 1, 2)
     np.testing.assert_almost_equal(fm.f_beta[1], 2, 2)
     np.testing.assert_almost_equal(fm.f_beta[2], -1, 2)
+    
+
+def test_adagrad_int(data, params_adagrad):
+    log = logging.getLogger('test_sgd_int')
+    values, rows, cols, y = data
+    K, opt_params = params_adagrad
+    
+    fm = FM(K, opt_params, standardize=True)
+    fm.fit(values, rows, cols, y)
+
+    est_int12 = fm.f_v[1, :].dot(fm.f_v[2, :])
+
+    log.debug('intercept: {}'.format(fm.f_beta0))
+    log.debug('first 3 main effects: {}'.format(fm.f_beta[:3]))
+    log.debug('remaining main effects: {}'.format(fm.f_beta[3:10]))
+    log.debug('interaction effect of 1+2: {}'.format(est_int12))
+
+    np.testing.assert_almost_equal(fm.f_beta0, 0, 2)
+    np.testing.assert_almost_equal(fm.f_beta[0], 1, 2)
+    np.testing.assert_almost_equal(fm.f_beta[1], 2, 2)
+    np.testing.assert_almost_equal(fm.f_beta[2], -1, 2)
+    
     
