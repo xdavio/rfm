@@ -8,7 +8,7 @@ from pyfm import FM
 @pytest.fixture()
 def setup(nrow=1000, ncol=10, seed=23098472):
     np.random.seed(seed)
-    
+
     NUM_VAL = 2 * nrow
 
     # random normal values
@@ -33,8 +33,8 @@ def params1():
         "optimizer": "sgd",
         "minibatch": 128,
         "n_outer": 10000,
-        "eta" : 0.001,
-        "lambda" : 0,
+        "eta": 0.001,
+        "lambda": 0,
         "eps": 1e-8
     }
     return opt_params_sgd
@@ -65,29 +65,28 @@ def test_sgd_main_effects(setup, params1, seed=238423):
     values, rows, cols, y, y_ind, K = setup
 
     np.random.seed(seed)
-    
+
     fm = FM(K, params1, True)
     fm.fit(values, rows, cols, y)
-    print(fm.f_beta0)
-    print(fm.f_beta)
-    print(fm.f_v)
+
     np.testing.assert_almost_equal(fm.f_beta0, 0, 2)
     np.testing.assert_almost_equal(fm.f_beta[0], 2, 2)
     np.testing.assert_almost_equal(fm.f_beta[1], -1, 2)
 
     # assert that too few iterations produces high in-sample loss
     loss1 = fm.loss(values, rows, cols, y)
-    params1['n_outer'] = 10
+    params1['n_outer'] = 1
+    fm = FM(K, params1, True)
     fm.fit(values, rows, cols, y)
     loss2 = fm.loss(values, rows, cols, y)
     assert loss1 < loss2
 
 
 def test_adam_main_effects(setup, params_adam, seed=238423):
-    np.random.seed(seed)    
-    para = params_adam    
+    np.random.seed(seed)
+    para = params_adam
     values, rows, cols, y, y_ind, K = setup
-    
+
     fm = FM(K, para, True)
     fm.fit(values, rows, cols, y)
     print(fm.f_beta0)
@@ -99,17 +98,18 @@ def test_adam_main_effects(setup, params_adam, seed=238423):
 
     # assert that too few iterations produces high in-sample loss
     loss1 = fm.loss(values, rows, cols, y)
-    para['n_outer'] = 10
+    para['n_outer'] = 1
+    fm = FM(K, para, True)
     fm.fit(values, rows, cols, y)
     loss2 = fm.loss(values, rows, cols, y)
     assert loss1 < loss2
 
 
 def test_adagrad_main_effects(setup, params_adagrad, seed=238423):
-    np.random.seed(seed)    
-    para = params_adagrad    
+    np.random.seed(seed)
+    para = params_adagrad
     values, rows, cols, y, y_ind, K = setup
-    
+
     fm = FM(K, para, True)
     fm.fit(values, rows, cols, y)
     print(fm.f_beta0)
@@ -121,8 +121,8 @@ def test_adagrad_main_effects(setup, params_adagrad, seed=238423):
 
     # assert that too few iterations produces high in-sample loss
     loss1 = fm.loss(values, rows, cols, y)
-    para['n_outer'] = 10
+    para['n_outer'] = 1
+    fm = FM(K, para, True)
     fm.fit(values, rows, cols, y)
     loss2 = fm.loss(values, rows, cols, y)
     assert loss1 < loss2
-
