@@ -24,9 +24,11 @@ Params fit_fm(Params params,
     float & eps = opt_params.eps;
     float & beta1 = opt_params.beta1; // ADAM parameters
     float & beta2 = opt_params.beta2;
-    
+
+    int & response_type = opt_params.response_type;
+        
     // penalty parameter
-    float & lambda = opt_params.lambda;
+    const float & lambda = opt_params.lambda;
 
     // get optimizer
     int & optimizer = opt_params.optimizer;
@@ -59,7 +61,7 @@ Params fit_fm(Params params,
     }
     
     // make sparse matrix X
-    SparseFM X(values, rows, cols, nrow, ncol);
+    SparseFM X(values, rows, cols, nrow, ncol, response_type);
     SMat Xval = X.matrix(); // ref the SMat
 
     float beta0_derlik;

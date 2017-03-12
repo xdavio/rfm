@@ -5,8 +5,11 @@
 
 #include <Eigen/Sparse>
 #include <random>
+#include <math.h>
 
 using namespace Eigen;
+
+#define ln2inv 1.44269504089
 
 typedef Triplet<double> T;
 typedef SparseMatrix<double, RowMajor> SMat;
@@ -30,28 +33,49 @@ struct OptParams {
     float eps;     // epsilon term for adam and adagrad
     float beta1;   // adagrad-only
     float beta2;   // adagrad-only
+    int response_type; // 0 is linear, 1 is binary
 };
 
 class SparseFM
 {
  private:
   SMat m;
+  int response_type;
  public:
   SparseFM(const VectorXd & values,
-		 const VectorXi & rows,
-		 const VectorXi & cols,
-		 int & nrow,
-		 int & ncol)
+           const VectorXi & rows,
+           const VectorXi & cols,
+           int & nrow,
+           int & ncol,
+           int & response_type_int)
     {
       m = SMat(nrow, ncol);
-      
-      std::vector<T> triplets;
-      triplets.reserve(values.size());
-      for (int i=0; i<values.size(); ++i)
-        {
-	  triplets.push_back(T(rows(i), cols(i), values(i)));
-        }
-      m.setFromTriplets(triplets.begin(), triplets.end());
+      response_type = response_type_int;
+
+      make_matrix(values, rows, cols);
+    }
+    
+    SparseFM(const VectorXd & values,
+             const VectorXi & rows,
+             const VectorXi & cols,
+             int & nrow,
+             int & ncol)
+    {
+        m = SMat(nrow, ncol);
+        
+        make_matrix(values, rows, cols);
+    }
+
+    inline void make_matrix(const VectorXd & values,
+                            const VectorXi & rows,
+                            const VectorXi & cols) {
+        std::vector<T> triplets;
+        triplets.reserve(values.size());
+        for (int i=0; i<values.size(); ++i)
+            {
+                triplets.push_back(T(rows(i), cols(i), values(i)));
+            }
+        m.setFromTriplets(triplets.begin(), triplets.end());
     }
 
   inline const SMat & matrix() const {
@@ -91,10 +115,42 @@ class SparseFM
                     VectorXd & Y,
                     VectorXd & w)
     {
-      // computes the derivative of squared loss with respect to the model
-      return -2 * w(row) * (Y(row) - predict(row, beta0, beta, v));
+        if (response_type == 0) {
+            // computes the derivative of squared loss with respect to the model
+            return -2 * w(row) * (Y(row) - predict(row, beta0, beta, v));
+        } else {
+            // computes the derivative of squared loss with respect to the model
+            float pred = predict(row, beta0, beta, v);
+            float t = exp(-Y(row) * pred);
+            return w(row) * ln2inv * (-Y(row) * t) / (1 + t);
+        }
     }
 };
+
+// class LogisticSparseFM : public SparseFM
+// {
+//  public:
+//   LogisticSparseFM(const VectorXd & values,
+//                    const VectorXi & rows,
+//                    const VectorXi & cols,
+//                    int & nrow,
+//                    int & ncol)
+//     : SparseFM(values, rows, cols, nrow, ncol)
+//     {}
+
+//   inline float derm(int row,
+//                     float beta0,
+//                     VectorXd & beta,
+//                     MatrixXd & v,
+//                     VectorXd & Y,
+//                     VectorXd & w)
+//     {
+//       // computes the derivative of squared loss with respect to the model
+//       float pred = predict(row, beta0, beta, v);
+//       float t = exp(-Y(row) * pred);
+//       return w(row) * ln2inv * (-Y(row) * t) / (1 + t);
+//     }
+// };
 
 // make sparse vector
 template <typename T_val, typename T_ind>
