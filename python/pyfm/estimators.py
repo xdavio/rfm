@@ -4,10 +4,13 @@ from sklearn.model_selection import KFold
 from c_fm import fit_fm, predictfm
 
 OPTIMIZERS = ['adam', 'adagrad', 'sgd']
+RESPONSE_TYPES = ['linear', 'binary']
 
 
 class FM:
     def __init__(self, K, opt_params, standardize=False):
+        opt_params = opt_params.copy()
+        
         if opt_params['optimizer'] not in OPTIMIZERS:
             raise ValueError('Supplied optimizer is not one of ' +
                              ', '.join(OPTIMIZERS))
@@ -17,6 +20,13 @@ class FM:
             opt_params['optimizer'] = 0
         elif opt_params['optimizer'] == 'sgd':
             opt_params['optimizer'] = 2
+
+        # set response type
+        response_type = opt_params.get('response_type', 'linear')
+        if response_type == 'linear':
+            opt_params['response_type'] = 0
+        elif response_type == 'binary':
+            opt_params['response_type'] = 1
 
         self.nrow = None
         self.ncol = None

@@ -30,6 +30,7 @@ std::tuple<float, Eigen::VectorXd, Eigen::MatrixXd> c_fit_fm(float & beta0,
   opt_params.n_outer = static_cast<int>(opt_params_l["n_outer"]);
   opt_params.eta = static_cast<float>(opt_params_l["eta"]);
   opt_params.lambda = static_cast<float>(opt_params_l["lambda"]);
+  opt_params.response_type = static_cast<int>(opt_params_l["response_type"]);  
 
   if (opt_params.optimizer == 0) {
       // adagrad init
