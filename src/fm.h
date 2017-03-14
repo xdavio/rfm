@@ -33,24 +33,24 @@ struct OptParams {
     float eps;     // epsilon term for adam and adagrad
     float beta1;   // adagrad-only
     float beta2;   // adagrad-only
-    int response_type; // 0 is linear, 1 is binary, 2 is cross entropy
+    int loss; // 0 is linear, 1 is binary, 2 is cross entropy
 };
 
 class SparseFM
 {
  private:
   SMat m;
-  int response_type;
+  int loss;
  public:
   SparseFM(const VectorXd & values,
            const VectorXi & rows,
            const VectorXi & cols,
            int & nrow,
            int & ncol,
-           int & response_type_int)
+           int & loss_int)
     {
       m = SMat(nrow, ncol);
-      response_type = response_type_int;
+      loss = loss_int;
 
       make_matrix(values, rows, cols);
     }
@@ -115,15 +115,15 @@ class SparseFM
                     VectorXd & Y,
                     VectorXd & w)
     {
-        if (response_type == 0) {
+        if (loss == 0) {
             // computes the derivative of squared loss with respect to the model
             return -2 * w(row) * (Y(row) - predict(row, beta0, beta, v));
-        } else if (response_type == 1) {
+        } else if (loss == 1) {
             // computes the derivative of logistic with respect to the model
             float pred = predict(row, beta0, beta, v);
             float t = exp(-Y(row) * pred);
             return w(row) * ln2inv * (-Y(row) * t) / (1 + t);
-        } else if (response_type == 2) {
+        } else if (loss == 2) {
             // compute the derivative of cross entropy w.r.t. the model
             // for binary response in {0,1}, cross entropy is given by
             // -y \log \hat{y} - (1-y) \log (1 - \hat{y})
