@@ -4,7 +4,7 @@ from sklearn.model_selection import KFold
 from c_fm import fit_fm, predictfm
 
 OPTIMIZERS = ['adam', 'adagrad', 'sgd']
-RESPONSE_TYPES = ['linear', 'binary']
+RESPONSE_TYPES = ['linear', 'binary', 'cross_entropy']
 
 
 class FM:
@@ -21,12 +21,17 @@ class FM:
         elif opt_params['optimizer'] == 'sgd':
             opt_params['optimizer'] = 2
 
-        # set response type
-        response_type = opt_params.get('response_type', 'linear')
+        # get response type
+        response_type = opt_params.get('response_type', 'linear')        
+        if response_type not in RESPONSE_TYPES:
+            raise ValueError('Supplied response type is not one of ' +
+                             ', '.join(OPTIMIZERS))
         if response_type == 'linear':
             opt_params['response_type'] = 0
         elif response_type == 'binary':
             opt_params['response_type'] = 1
+        elif response_type == 'cross_entropy':
+            opt_params['response_type'] = 2
 
         self.nrow = None
         self.ncol = None

@@ -95,11 +95,11 @@ class SparseEmbedding:
         m['no_values'] = no_values
         m['ids'] = np.arange(last_max, last_max + no_values)
 
-        id2code = {i:code for i, code in zip(m['ids'],
-                                             m['codes'])}
+        id2code = {i: code for i, code in zip(m['ids'],
+                                              m['codes'])}
         m['id2code'] = id2code
-        code2id = {code:i for i, code in zip(m['ids'],
-                                             m['codes'])}
+        code2id = {code: i for i, code in zip(m['ids'],
+                                              m['codes'])}
         m['code2id'] = code2id
 
         m['row'] = np.arange(self.nrow)

@@ -33,7 +33,7 @@ struct OptParams {
     float eps;     // epsilon term for adam and adagrad
     float beta1;   // adagrad-only
     float beta2;   // adagrad-only
-    int response_type; // 0 is linear, 1 is binary
+    int response_type; // 0 is linear, 1 is binary, 2 is cross entropy
 };
 
 class SparseFM
@@ -118,11 +118,20 @@ class SparseFM
         if (response_type == 0) {
             // computes the derivative of squared loss with respect to the model
             return -2 * w(row) * (Y(row) - predict(row, beta0, beta, v));
-        } else {
-            // computes the derivative of squared loss with respect to the model
+        } else if (response_type == 1) {
+            // computes the derivative of logistic with respect to the model
             float pred = predict(row, beta0, beta, v);
             float t = exp(-Y(row) * pred);
             return w(row) * ln2inv * (-Y(row) * t) / (1 + t);
+        } else if (response_type == 2) {
+            // compute the derivative of cross entropy w.r.t. the model
+            // for binary response in {0,1}, cross entropy is given by
+            // -y \log \hat{y} - (1-y) \log (1 - \hat{y})
+            // the derivative
+            // ( -y / \hat{h} + (1-y)/(1 - \hat{y}) ) d\hat{y}
+            float pred = predict(row, beta0, beta, v);
+            float y = Y(row);
+            return -y / pred + (1-y) / (1 - pred);
         }
     }
 };
