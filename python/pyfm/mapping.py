@@ -82,8 +82,8 @@ class SparseEmbedding:
         m['no_values'] = 1
         m['ids'] = np.array([self.last_max])
 
-        m['code2id'] = {'coef':self.last_max}
-        m['id2code'] = {self.last_max:'coef'}
+        m['code2id'] = {'coef': self.last_max}
+        m['id2code'] = {self.last_max: 'coef'}
 
         self.last_max += 1
 
@@ -95,11 +95,9 @@ class SparseEmbedding:
         m['no_values'] = no_values
         m['ids'] = np.arange(last_max, last_max + no_values)
 
-        id2code = {i: code for i, code in zip(m['ids'],
-                                              m['codes'])}
+        id2code = {i: code for i, code in zip(m['ids'], m['codes'])}
         m['id2code'] = id2code
-        code2id = {code: i for i, code in zip(m['ids'],
-                                              m['codes'])}
+        code2id = {code: i for i, code in zip(m['ids'], m['codes'])}
         m['code2id'] = code2id
 
         m['row'] = np.arange(self.nrow)
